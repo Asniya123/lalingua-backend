@@ -60,16 +60,42 @@ export default class CategoryController implements ICategoryController {
         }
     }
 
+    
     async listCategory(req: Request, res: Response): Promise<void> {
         try {
-            const categories = await this.categoryService.listCategory()
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 5;
+
+            if (page < 1 || limit < 1) {
+                res.status(400).json({
+                    success: false,
+                    error: 'Invalid pagination parameters. Page and limit must be positive numbers.',
+                });
+                return;
+            }
+
+            const { categories, total } = await this.categoryService.listCategory(page, limit);
+
             res.status(200).json({
+                success: true,
                 message: 'Categories retrieved successfully',
-                categories
-            })
+                data: {
+                    categories,
+                    pagination: {
+                        currentPage: page,
+                        totalPages: Math.ceil(total / limit),
+                        totalItems: total,
+                        itemsPerPage: limit,
+                    },
+                },
+            });
         } catch (error) {
-            res.status(500).json({ error: (error as Error).message });
-        }        
+            console.error('Error in CategoryController.listCategory:', error);
+            res.status(500).json({
+                success: false,
+                error: (error as Error).message || 'Internal server error',
+            });
+        }
     }
 
     async deleteCategory(req: Request, res: Response): Promise<void> {

@@ -1,20 +1,22 @@
-import { googleUserData, ILogin, IStudent, IStudentRepository, IStudentService } from "../../interface/IStudent.js";
+import { googleUserData, ILogin, IStudent, IStudentRepository, IStudentService} from "../../interface/IStudent.js";
 import studentRepo from "../../repositories/student/studentRepo.js";
 import { sendMail } from "../../utils/sendMail.js";
 import bcrypt from "bcrypt";
 import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils.js";
-import { hashPassword } from "../../utils/passwordUtil.js";
-import { JwtPayload } from "jsonwebtoken";
+import { comparePassword, hashPassword } from "../../utils/passwordUtil.js";
+import { ILanguage, ILanguageRepository } from "../../interface/ILanguage.js";
+import languageRepository from "../../repositories/admin/languageRepository.js";
 
 
 
 
  class StudentService implements IStudentService{
     private studentRepo: IStudentRepository;
-
-
-    constructor( studentRepo: IStudentRepository){
+    private languageRepository: ILanguageRepository
+   
+    constructor( studentRepo: IStudentRepository, languageRepository: ILanguageRepository){
         this.studentRepo = studentRepo;
+        this.languageRepository = languageRepository
     }
 
 
@@ -80,7 +82,7 @@ import { JwtPayload } from "jsonwebtoken";
         try {
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-    
+            console.log(" OTP:", otp); 
             await this.studentRepo.createOtp({ email, otp, expiresAt });
     
             await sendMail(email, otp);
@@ -115,7 +117,7 @@ import { JwtPayload } from "jsonwebtoken";
     
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-    
+        console.log("Resend OTP:", otp); 
         await sendMail(email, otp);
     
         return await this.studentRepo.updateOtp(email, otp, expiresAt);
@@ -139,8 +141,9 @@ import { JwtPayload } from "jsonwebtoken";
             error.status = 403;
             throw error;
         }
-        
+        console.log('password',student.password,password)
         const isPasswordValid = await bcrypt.compare(password, student.password)
+        console.log(isPasswordValid,"++++")
         if(!isPasswordValid){
             throw new Error('Invalid password')
         }
@@ -156,6 +159,9 @@ import { JwtPayload } from "jsonwebtoken";
                 _id: student._id,
                 name: student.name,
                 email: student.email,
+                mobile: student.mobile,
+                profilePicture: student.profilePicture,
+                is_blocked: student.is_blocked
             },
         }
     }
@@ -169,15 +175,12 @@ import { JwtPayload } from "jsonwebtoken";
         const existingStudent = await this.studentRepo.findByEmail(studentData.email);
       
         if (existingStudent) {
-          console.log("Google Sign-In: Existing student found, generating tokens");
       
           const accessToken = generateAccessToken(existingStudent._id.toString());
           const refreshToken = generateRefreshToken(existingStudent._id.toString());
       
           return { student: existingStudent, accessToken, refreshToken };
         }
-      
-        console.log("Google Sign-In: No existing student found, creating new student");
       
         const newStudent = await this.studentRepo.create({
           email: studentData.email,
@@ -212,7 +215,7 @@ import { JwtPayload } from "jsonwebtoken";
       }
 
 
-      async updateStudentProfile(studentId: string, profileData: { name: string; email: string; phone: string; }): Promise<IStudent | null> {
+      async updateStudentProfile(studentId: string, profileData: { name: string; email: string; mobile: string; }): Promise<IStudent | null> {
           const updatestudent = await this.studentRepo.updateStudentProfile(studentId, profileData)
           if(!updatestudent){
             throw new Error('Failed to update profile')
@@ -221,6 +224,93 @@ import { JwtPayload } from "jsonwebtoken";
       }
       
     
+      async uploadProfilePicture(studentId: string, profilePicture: string): Promise<IStudent | null> {
+          const updatedStudent = await this.studentRepo.uploadProfilePicture(studentId, profilePicture)
+          if(!updatedStudent){
+            throw new Error('Failed to update profile picture')
+          }
+          return updatedStudent
+      }
+
+
+      async forgotPassword(email: string): Promise<void> {
+        try {
+          const student = await this.studentRepo.findByEmail(email);
+          if (!student) {
+            throw new Error("No student found with this email");
+          }
+      
+          const otp = Math.floor(100000 + Math.random() * 900000).toString();
+          const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+          console.log("Forgot OTP:", otp); 
+          await this.studentRepo.updateOtp(email, otp, expiresAt);
+          console.log('Generated OTP for reset:', { email, otp, expiresAt }); 
+      
+          const emailMessage = `Your OTP code for password reset is ${otp}. It will expire in 5 minutes.`;
+          await sendMail(email, emailMessage);
+        } catch (error) {
+          throw error;
+        }
+      }
+
+
+      async resetPassword(email: string, otp: string, newPassword: string): Promise<IStudent> {
+        try {
+          const student = await this.studentRepo.findByEmail(email); 
+          if (!student) {
+            throw new Error("Student not found");
+          }
+    
+          console.log('Student OTP Data:', { storedOtp: student.otp, receivedOtp: otp, expiresAt: student.expiresAt });
+    
+          if (!student.otp || student.otp !== otp) {
+            throw new Error("Invalid OTP");
+          }
+          if (student.expiresAt < new Date()) {
+            throw new Error("OTP has expired");
+          }
+    
+          const hashedPassword = await hashPassword(newPassword);
+          const updatedStudent = await this.studentRepo.updatePasswordAndClearOtp(email, hashedPassword);
+         
+          
+          if (!updatedStudent) {
+            throw new Error("Failed to reset password");
+          }
+    
+          return updatedStudent;
+        } catch (error) {
+          console.error('Reset Password Error:', error);
+          throw error;
+        }
+      } 
+
+      async changePassword(studentId: string, currentPassword: string, newPassword: string): Promise<IStudent | null> {
+        const student=await this.studentRepo.findById(studentId)
+     
+        if(!student){
+          throw new Error("Invalid User")
+        }
+        const isPasswordCorrect=await bcrypt.compare(currentPassword,student.password)
+      
+        if(!isPasswordCorrect){
+          throw new Error("Ïnvalid Password")
+        }
+        const hashedPassword=await hashPassword(newPassword)
+        const updatePassword=this.studentRepo.changePassword(studentId,hashedPassword)
+        if(!updatePassword){
+          throw new Error("couldn't update password")
+        }
+        return updatePassword
+      }
+
+
+      //Language
+
+      async getLanguages(): Promise<ILanguage[]> {
+        return await this.languageRepository.getLanguages();
+      }
+
 }
 
-export default new StudentService(studentRepo)
+export default new StudentService(studentRepo, languageRepository)

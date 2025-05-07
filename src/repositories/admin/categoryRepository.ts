@@ -16,14 +16,40 @@ class CategoryRepository implements ICategoryRepository {
         return await categoryModel.findByIdAndUpdate(categoryId, updateData, { new: true });
     }
 
-    async listCategory(): Promise<ICategory[]> {
-        return await categoryModel.find()
+    async listCategory(page: number, limit: number): Promise<{ categories: ICategory[], total: number }> {
+        try {
+            const skip = (page - 1) * limit;
+
+            const [categories, total] = await Promise.all([
+                categoryModel
+                    .find()
+                    .skip(skip)
+                    .limit(limit)
+                    .lean(), 
+                categoryModel.countDocuments(),
+            ]);
+
+          
+
+            return {
+                categories,
+                total,
+            };
+        } catch (error) {
+            console.error('Error in CategoryRepository.listCategory:', error);
+            throw new Error('Failed to fetch categories from database');
+        }
     }
+
+    async listAllCategories(): Promise<ICategory[]> {
+        return await categoryModel.find().exec(); 
+      }
 
     async deleteCategory(categoryId: string): Promise<boolean> {
         const result = await categoryModel.findByIdAndDelete(categoryId);
         return !!result;
     }
+  
     
 }
 

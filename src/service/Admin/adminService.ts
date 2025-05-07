@@ -5,19 +5,23 @@ import bcrypt from "bcrypt";
 import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils.js";
 import { IStudentRepository } from "../../interface/IStudent.js";
 import tutorRepository from "../../repositories/tutor/tutorRepo.js";
-import { ITutorRepository } from "../../interface/ITutor.js";
+import { ITutor, ITutorRepository } from "../../interface/ITutor.js";
 import { sendMail } from "../../utils/sendMail.js";
+import { ICourse, ICourseRepository } from "../../interface/ICourse.js";
+import courseRepo from "../../repositories/tutor/courseRepo.js";
 
 class AdminService implements IAdminService {
   private adminRepository: IAdminRepository;
   private studentRepository: IStudentRepository;
   private tutorRepository: ITutorRepository;
+  private courseRepository: ICourseRepository
  
 
-  constructor(adminRepository: IAdminRepository, studentRepository: IStudentRepository,tutorRepository:ITutorRepository) {
+  constructor(adminRepository: IAdminRepository, studentRepository: IStudentRepository,tutorRepository:ITutorRepository,courseRepository: ICourseRepository) {
     this.adminRepository = adminRepository;
     this.studentRepository = studentRepository;
-    this.tutorRepository=tutorRepository
+    this.tutorRepository = tutorRepository
+    this.courseRepository = courseRepository
   }
 
   async login(email: string, password: string): Promise<ILogin> {
@@ -45,8 +49,8 @@ class AdminService implements IAdminService {
     };
   }
 
-  async getUsers(): Promise<IAdmin[]> {
-    return await this.studentRepository.getUsers();
+  async getUsers(page: number, limit: number): Promise<{ users: IAdmin[], total: number }> {
+    return await this.studentRepository.getUsers(page, limit);
   }
 
   async blockUnblock(userId: string, isBlocked: boolean): Promise<any> {
@@ -66,9 +70,9 @@ class AdminService implements IAdminService {
   }
   
 
-  async getTutors(): Promise<IAdmin[]> {
-    return await this.tutorRepository.getTutors()
-  }
+  async getTutors(page: number, limit: number, query: any = { status: 'approved' }): Promise<{tutor: ITutor[], total: number}> {
+    return await this.tutorRepository.getTutors(page, limit, query);
+}
 
   async tutorManagement(tutorId: string, isBlocked: boolean): Promise<any> {
       try {
@@ -108,6 +112,26 @@ class AdminService implements IAdminService {
         message: `Tutor status updated to ${status}`
       }
   }
+
+  async getCourse(page: number, limit: number): Promise<{ courses: ICourse[]; total: number }> {
+    return await this.courseRepository.getCourse(page, limit);
+  }
+
+  async blockedUnblocked(courseId: string, isBlocked: boolean): Promise<ICourse> {
+    try {
+        const course = await this.courseRepository.findById(courseId);
+        if (!course) {
+            throw new Error("Course not found");
+        }
+
+      
+        return await this.courseRepository.updateBlockStatus(courseId, isBlocked);
+    } catch (error: any) {
+        console.error('Error in blockedUnblocked:', error);
+        throw new Error(`Failed to block/unblock course: ${error.message}`);
+    }
 }
 
-export default new AdminService(adminRepository, studentRepository, tutorRepository);
+}
+
+export default new AdminService(adminRepository, studentRepository, tutorRepository, courseRepo);

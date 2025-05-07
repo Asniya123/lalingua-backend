@@ -1,9 +1,9 @@
 import { Schema, model, Document } from 'mongoose';
-import { IStudent } from '../interface/IStudent.js';
+import { IStudent, IEnrollment } from '../interface/IStudent.js';
+import bcrypt from "bcrypt";
 
 
-
-const UserSchema = new Schema<IStudent>({
+const UserSchema = new Schema<IStudent & { enrollments: IEnrollment[] }>({
   name: {
     type: String,
     required: true,
@@ -20,13 +20,12 @@ const UserSchema = new Schema<IStudent>({
     type: String,
     required: true,
   },
-  otp:{
+  otp: {
     type: String,
-    required: true,
   },
   expiresAt: {
     type: Date,
-    required: true,
+    required: false,
   },
   isVerified: {
     type: Boolean,
@@ -35,7 +34,7 @@ const UserSchema = new Schema<IStudent>({
   },
   profilePicture: {
     type: String,
-    required: false
+    required: false,
   },
   dateOfBirth: {
     type: Date,
@@ -43,12 +42,54 @@ const UserSchema = new Schema<IStudent>({
   },
   is_blocked: {
     type: Boolean,
-    default: false
-  }
-},
-{
-  timestamps: true
+    default: false,
+  },
+  enrollments: [{
+    courseId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Course',
+      required: true,
+    },
+    paymentId: {
+      type: String,
+      required: true,
+    },
+    orderId: {
+      type: String,
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    currency: {
+      type: String,
+      default: 'INR',
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'completed', 'failed'],
+      default: 'completed',
+    },
+    enrolledAt: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
+}, {
+  timestamps: true,
 });
 
-const userModel = model<IStudent>('Student', UserSchema);
+UserSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+const userModel = model<IStudent & { enrollments: IEnrollment[] }>('Student', UserSchema);
 export default userModel;

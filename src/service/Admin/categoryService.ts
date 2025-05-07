@@ -35,8 +35,13 @@ class CategoryService implements ICategoryService {
         return updatedCategory;
     }
 
-    async listCategory(): Promise<ICategory[]> {
-        return await this.categoryRepository.listCategory()
+    async listCategory(page: number, limit: number): Promise<{ categories: ICategory[], total: number }> {
+        try {
+            return await this.categoryRepository.listCategory(page, limit);
+        } catch (error) {
+            console.error('Error in CategoryService.listCategory:', error);
+            throw new Error('Service failed to fetch categories');
+        }
     }
 
     async deleteCategory(categoryId: string): Promise<boolean> {

@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 const generateAccessToken = (studentId: string) => {  
-  return jwt.sign({ id: studentId }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+  return jwt.sign({ id: studentId }, process.env.JWT_SECRET as string, { expiresIn: '15m' });
 };
 
 const generateRefreshToken = (userId: string) => { 

@@ -21,11 +21,11 @@ const TutorSchema = new Schema<ITutor>(
     },
     otp: {
       type: String,
-      required: true,
+      // required: true,
     },
     expiresAt: {
       type: Date,
-      required: true,
+      required: false,
     },
     isVerified: {
       type: Boolean,
@@ -38,6 +38,38 @@ const TutorSchema = new Schema<ITutor>(
     },
     documents: {
       type: String,
+    },
+    profilePicture: {
+      type: String,
+      required: false
+    },
+    qualification: {
+      type: String,
+      default: ''
+    },
+    language: {
+      type: String,
+      default: ''
+    },
+    country: {
+      type: String,
+      default: ''
+    },
+    experience: {
+      type: String,
+      default: ''
+    },
+    specialization: {
+      type: String,
+      default: ''
+    },
+    dateOfBirth: {
+      type: String,
+      default: ''
+    },
+    bio: {
+      type: String,
+      default: ''
     },
     status: {
       type: String,

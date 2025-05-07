@@ -2,7 +2,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import studentRepo from "../repositories/student/studentRepo.js";
 
-// ✅ Declare a global namespace for Express to fix `req.user` TypeScript error
+
 declare global {
   namespace Express {
     interface Request {
@@ -26,21 +26,21 @@ export const authenticate = async (
     return
     }
 
-    // ✅ Verify token and ensure it is of type JwtPayload
+ 
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
 
     console.log("Decoded Token:", decoded);
 
-    if (!decoded?._id) {
+    if (!decoded?.id) {
      res.status(400).json({ message: "Invalid token structure." });
      return
     }
 
-    // ✅ Fetch student details from database
-    const student = await studentRepo.findById(decoded._id);
+    
+    const student = await studentRepo.findById(decoded.id);
 
     if (!student) {
-       res.status(401).json({ message: "User not found." });
+       res.status(403).json({ message: "User not found." });
        return
     }
 
@@ -49,12 +49,12 @@ export const authenticate = async (
       return
     }
 
-    req.user = { _id: decoded._id };
+    req.user = { _id: decoded.id };
 
     next();
   } catch (error) {
     console.error("JWT Verification Error:", error);
-     res.status(400).json({ message: "Invalid token." });
+     res.status(401).json({ message: "Invalid token." });
      return
   }
-};
+};  

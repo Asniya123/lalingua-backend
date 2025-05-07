@@ -1,4 +1,4 @@
-import { ObjectId, Document } from "mongoose";
+import { ObjectId, Document, FilterQuery } from "mongoose";
 import { Request, Response } from 'express'
 
 export interface ITutor extends Document {
@@ -12,7 +12,15 @@ export interface ITutor extends Document {
     isVerified: boolean;
     googleId?: string;
     documents?: string;
+    qualification?: string;
+    language?: string;
+    country?: string;
+    experience?: string;
+    dateOfBirth?: string;
+    bio: string;
+    specialization?: string;
     is_blocked: boolean;
+    profilePicture?: string
     status: 'pending' | 'approved' | 'rejected'
     
 }
@@ -25,9 +33,16 @@ export interface ILogin{
         name: string;
         email: string;
         status: 'pending' | 'approved' | 'rejected'; 
-        is_blocked:boolean
+        is_blocked:boolean;
+        mobile: number;
+        profilePicture?: string
     }
 }
+
+interface Query {
+    status?: string;
+    [key: string]: any; 
+  }
 
 
 export interface googleTutorData {
@@ -40,7 +55,7 @@ export interface googleTutorData {
 }
 
 export interface ITutorRepository {
-     getTutors():Promise<ITutor[]>;
+    getTutors(page: number, limit: number, query: Query): Promise<{ tutor: ITutor[], total: number }>
     getAllTutors(): Promise<ITutor[]>
     create(data: Partial<ITutor>): Promise<ITutor | null>
     findByEmail(email: string|undefined): Promise<ITutor | null >
@@ -49,6 +64,18 @@ export interface ITutorRepository {
     findByEmailOtp(email: string | undefined): Promise<ITutor | null >
     updateOtp(email: string, otp: string, expiresAt: Date): Promise<ITutor |  null>
     findGoogleId(googleId: string): Promise<ITutor | null>
+
+    getTutorProfile(tutorId: string): Promise<ITutor | null >
+    updateTutorProfile(tutorId: string, updateData: Partial<ITutor>): Promise<ITutor | null>
+    uploadProfilePicture(tutorId: string, profilePicture: string): Promise<ITutor | null>
+
+    updatePasswordAndClearOtp(email: string, password: string): Promise<ITutor | null>
+
+    changePassword(tutorId: string, newPassword:string): Promise<ITutor | null>
+
+    getContact(query: FilterQuery<ITutor>, tutorId: string | undefined): Promise<ITutor[] | null>
+
+
 }
 
 
@@ -60,6 +87,17 @@ export interface ITutorService {
     googlesignIn(tutorData: googleTutorData,): Promise<{tutor: ITutor; accessToken: string;refreshToken: string} >
     login(email: string, password: string): Promise<ILogin >
 
+    getTutorProfile(tutorId: string): Promise<ITutor | null >
+    updateTutorProfile(tutorId: string, profileData: Partial<ITutor>): Promise<ITutor | null>
+    uploadProfilePicture(tutorId: string, profilePicture: string): Promise<ITutor | null >
+
+    forgotPassword(email: string): Promise<void>
+    resetPassword(email: string, otp: string, newPassword: string): Promise<ITutor>
+
+    changePassword(tutorId: string, currentPassword: string, newPassword: string): Promise<ITutor | null>
+
+    verifyTutor(tutorId: string): Promise<ITutor | null> 
+     renewAccessToken(tutorId: string): Promise<string>
 }
 
 
@@ -69,6 +107,64 @@ export  interface ITutorController{
     resendOtp(req: Request, res: Response): Promise<void>
     googlesignIn(req: Request, res: Response): Promise<void>
     login(req: Request, res: Response): Promise<void>
+
+    getTutorProfile(req: Request, res: Response): Promise<void>
+    updateTutorProfile(req:Request, res: Response): Promise<void>
+    uploadProfilePicture(req: Request, res: Response): Promise<void>
+
+    forgotPassword(req: Request, res: Response): Promise<void>
+    resetPassword(req: Request, res: Response): Promise<void>
+
+    changePassword(req: Request, res: Response): Promise<void>
 }
 
 
+export interface ISTutorRepository{
+    findAll(): Promise<ITutor[]>
+    findById(id: string): Promise<ITutor | null> 
+}
+
+
+export interface ISTutorService{
+    getAllTutors(): Promise<ITutor[]> 
+    getTutorById(id: string): Promise<{ success: boolean; data: any }>
+}
+
+
+export interface ISTutorController{
+    getAllTutors(req: Request, res: Response): Promise<void>
+    getTutorById(req: Request, res: Response): Promise<void>
+}
+
+export interface IEnrolledStudent {
+    student: {
+      _id: string;
+      name: string;
+      profilePicture?: string;
+    };
+    course: {
+      _id: string;
+      courseTitle: string;
+    };
+  }
+  
+
+
+export interface IEnrollmentStudRepository{
+    getEnrolledStudentsByTutor(tutorId: string): Promise<IEnrolledStudent[]>
+}
+
+
+export interface IEnrollmentStudService{
+    getEnrolledStudents(tutorId: string, requestingTutorId: string): Promise<{
+        success: boolean;
+        message: string;
+        enrolledStudents: IEnrolledStudent[];
+        total: number;
+    }>
+}
+
+
+export interface IEnrollmentStudController{
+    getEnrolledStudents(req: Request, res: Response): Promise<void>
+}

@@ -1,5 +1,7 @@
-import { AuthenticatedRequest, IStudentController, IStudentService } from "../../interface/IStudent.js";
+import { IStudentController, IStudentService } from "../../interface/IStudent.js";
 import { Request, Response } from 'express';
+import { ObjectId } from "mongodb";
+
 
 
 
@@ -89,7 +91,7 @@ export default class StudentController implements IStudentController {
             if (error.status === 403) {
                 res.status(403).json({ status: 403, message: error.message });
             } else if (error instanceof Error) {
-                res.status(401).json({ message: error.message || 'Something went wrong.' });
+                res.status(403).json({ message: error.message || 'Something went wrong.' });
             } else {
                 res.status(500).json({ message: 'Internal server error' });
             }
@@ -132,7 +134,7 @@ export default class StudentController implements IStudentController {
     async getStudentProfile(req: Request, res: Response): Promise<void> {
         try {
             if (!req.user || !req.user._id) {
-                res.status(401).json({ message: "Unauthorized access" });
+                res.status(403).json({ message: "Unauthorized access" });
                 return;
             }
     
@@ -154,36 +156,141 @@ export default class StudentController implements IStudentController {
     async updateStudentProfile(req:Request, res: Response): Promise<void> {
         try {
             if (!req.user || !req.user._id) {
-                res.status(401).json({ message: "Unauthorized access" });
+                res.status(404).json({ message: "Unauthorized access" });
                 return;
             }
     
             const studentId = req.user._id;
-            const { name, email, phone } = req.body;
-    
-            if (!name || !email || !phone) {
+            const { name, email, mobile } = req.body;
+            if (!name || !email || !mobile) {
                 res.status(400).json({ message: "All fields are required" });
                 return;
             }
-    
             const updatedStudent = await this.studentService.updateStudentProfile(studentId, {
                 name,
                 email,
-                phone,
+                mobile,
             });
     
             if (!updatedStudent) {
                 res.status(404).json({ message: "Failed to update profile" });
                 return;
             }
-    
             res.status(200).json({ message: "Profile updated successfully", student: updatedStudent });
         } catch (error) {
             console.error("Error updating student profile:", error);
             res.status(500).json({ message: "Internal Server Error" });
         }
     }
+
+    async uploadProfilePicture(req: Request, res: Response): Promise<void> {
+        try {
+          if (!req.user || !req.user._id) {
+            res.status(403).json({ message: 'Unauthorized access' });
+            return;
+          }
+      
+          const studentId = req.user._id;
+          const { profilePicture } = req.body;
+  
+         
+      
+          if (!profilePicture) {
+            res.status(400).json({ message: 'Profile picture URL is required' });
+            return;
+          }
+      
+          const updatedStudent = await this.studentService.uploadProfilePicture(studentId, profilePicture);
+      
+          if (!updatedStudent) {
+            res.status(404).json({ message: 'Failed to update profile picture' });
+            return;
+          }
+      
+          res.status(200).json({ message: 'Profile picture updated successfully', student: updatedStudent });
+        } catch (error) {
+          console.error('Error uploading profile picture:', error);
+          res.status(500).json({ message: 'Internal Server Error' });
+        }
+      }
     
+
+    async forgotPassword(req: Request, res: Response): Promise<void> {
+         try {
+          const { email } = req.body
+
+          if(!email){
+            res.status(400).json({ message: 'Email is required'})
+            return
+          }
+
+          await this.studentService.forgotPassword(email)
+          res.status(200).json({ message: 'OTP sent to your email for password reset'})
+         } catch (error) {
+            res.status(400).json({
+              message: error instanceof Error ? error.message: 'Error occured during forgot password rest'
+            })        
+         } 
+    }
+
+
+    async resetPassword(req: Request, res: Response): Promise<void> {
+      try {
+        const { email, otp, newPassword } = req.body;
+    
+        if (!email || !otp || !newPassword) {
+          res.status(400).json({ message: "Email, OTP, and new password are required" });
+          return;
+        }
+    
+        const updatedStudent = await this.studentService.resetPassword(email, otp, newPassword);
+        res.status(200).json({ message: "Password reset successfully", student: updatedStudent });
+      } catch (error) {
+        res.status(400).json({
+          message: error instanceof Error ? error.message : "Error occurred during password reset",
+        });
+      }
+    }
+
+
+    async changePassword(req: Request, res: Response): Promise<void> {
+      const { currentPassword, newPassword } = req.body;
+    
+      if (!currentPassword || !newPassword) {
+        res.status(400).json({ message: 'Current password and new password are required' });
+        return;
+      }
+    
+      try {
+        const studentId = req.user?._id;
+        if (!studentId) {
+          res.status(403).json({ message: 'Unauthorized, student ID not found' });
+          return;
+        }
+    
+        const student = await this.studentService.changePassword(studentId, currentPassword, newPassword);
+        if (!student) {
+          res.status(404).json({ message: 'Student not found' });
+          return;
+        }
+    
+        res.status(200).json({ message: 'Password changed successfully' });
+      } catch (error: any) {
+        res.status(400).json({ message: error.message || 'Failed to change password' });
+      }
+    }
+
+
+    //Language
+
+    async getLanguages(req: Request, res: Response): Promise<void> {
+      try {
+        const languages = await this.studentService.getLanguages();
+        res.status(200).json({ success: true, data: languages });
+      } catch (error) {
+        res.status(500).json({ success: false, message: "Failed to fetch languages" });
+      }
+    }
 }
     
 

@@ -52,67 +52,73 @@ export default class CourseController implements ISCourseController {
   }
 
 
+  
   async getCourseById(req: Request, res: Response): Promise<void> {
-    try {
-      const { courseId } = req.params;
-  
-      if (!courseId) {
-        res.status(400).json({ success: false, error: "Course ID is required" });
-        return;
-      }
-  
-      const { course, lesson } = await this.courseService.getCourseById(courseId);
-  
-      if (!course) {
-        res.status(404).json({ success: false, error: "Course not found" });
-        return;
-      }
-  
-      const sanitizedCourse: ICourse = {
-        _id: course._id?.toString() || new ObjectId().toString(),
-        courseTitle: course.courseTitle || "Untitled Course",
-        description: course.description || "No description available",
-        regularPrice: course.regularPrice || 0,
-        buyCount: course.buyCount || 0,
-        imageUrl: course.imageUrl || "",
-        category: course.category && typeof course.category === 'object' && 'name' in course.category
-          ? course.category
-          : course.category?.toString() || "Uncategorized",
-        language: course.language && typeof course.language === 'object' && 'name' in course.language
-          ? course.language
-          : course.language?.toString() || "Unknown",
-        isBlock: course.isBlock || false,
-        lessons: lesson?.map((lesson: ILesson) => ({
-          _id: lesson._id?.toString() || '',
-          title: lesson.title || "Untitled Lesson",
-          description: lesson.description || "No description",
-          introVideoUrl: lesson.introVideoUrl || "",
-          videoUrl: lesson.videoUrl || "",
-        })) || [],
-        tutorId: course.tutorId && typeof course.tutorId === 'object' && 'name' in course.tutorId
-          ? course.tutorId
-          : course.tutorId?.toString() || '',
-        tutor: course.tutor && typeof course.tutor === 'object' && 'name' in course.tutor
+  try {
+    const { courseId } = req.params;
+
+    if (!courseId) {
+      res.status(400).json({ success: false, error: "Course ID is required" });
+      return;
+    }
+
+    const { course, lesson } = await this.courseService.getCourseById(courseId);
+
+    if (!course) {
+      res.status(404).json({ success: false, error: "Course not found" });
+      return;
+    }
+
+    const sanitizedCourse: ICourse = {
+      _id: course._id?.toString() || new ObjectId().toString(),
+      courseTitle: course.courseTitle || "Untitled Course",
+      description: course.description || "No description available",
+      regularPrice: course.regularPrice || 0,
+      buyCount: course.buyCount || 0,
+      imageUrl: course.imageUrl || "",
+      category: course.category && typeof course.category === 'object' && 'name' in course.category
+        ? course.category
+        : course.category?.toString() || "Uncategorized",
+      language: course.language && typeof course.language === 'object' && 'name' in course.language
+        ? course.language
+        : course.language?.toString() || "Unknown",
+      isBlock: course.isBlock || false,
+      lessons: lesson?.map((lesson: ILesson) => ({
+        _id: lesson._id?.toString() || '',
+        title: lesson.title || "Untitled Lesson",
+        description: lesson.description || "No description",
+        introVideoUrl: lesson.introVideoUrl || "",
+        videoUrl: lesson.videoUrl || "",
+        syllabus: lesson.syllabus
           ? {
-              _id: course.tutor._id.toString(),
-              name: course.tutor.name || "Unknown Tutor",
-              profilePicture: course.tutor.profilePicture || undefined,
-            }
-          : course.tutorId && typeof course.tutorId === 'object' && 'name' in course.tutorId && typeof (course.tutorId as ITutorDisplay).name === 'string'
-          ? {
-              _id: (course.tutorId as ITutorDisplay)._id.toString(),
-              name: (course.tutorId as ITutorDisplay).name || "Unknown Tutor",
-              profilePicture: (course.tutorId as ITutorDisplay).profilePicture || undefined,
+              title: lesson.syllabus.title || "Untitled Syllabus",
+              description: lesson.syllabus.description || undefined,
             }
           : undefined,
-      };
-  
+      })) || [],
+      tutorId: course.tutorId && typeof course.tutorId === 'object' && 'name' in course.tutorId
+        ? course.tutorId
+        : course.tutorId?.toString() || '',
+      tutor: course.tutor && typeof course.tutor === 'object' && 'name' in course.tutor
+        ? {
+            _id: course.tutor._id.toString(),
+            name: course.tutor.name || "Unknown Tutor",
+            profilePicture: course.tutor.profilePicture || undefined,
+          }
+        : course.tutorId && typeof course.tutorId === 'object' && 'name' in course.tutorId && typeof (course.tutorId as ITutorDisplay).name === 'string'
+        ? {
+            _id: (course.tutorId as ITutorDisplay)._id.toString(),
+            name: (course.tutorId as ITutorDisplay).name || "Unknown Tutor",
+            profilePicture: (course.tutorId as ITutorDisplay).profilePicture || undefined,
+          }
+        : undefined,
+    };
 
-      res.status(200).json({ success: true, course: sanitizedCourse });
-    } catch (error) {
-      console.error("Error in getCourseById:", error);
-      res.status(500).json({ success: false, error: "Internal server error" });
-    }
+    res.status(200).json({ success: true, course: sanitizedCourse });
+  } catch (error) {
+    console.error("Error in getCourseById:", error);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
   }
 
 
@@ -276,6 +282,4 @@ export default class CourseController implements ISCourseController {
       }
     }
   }
-  
-
 }

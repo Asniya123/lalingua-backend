@@ -4,7 +4,7 @@ import {
 } from "../../interface/IConversation.js";
 import { DefaultEventsMap, Socket, Server as SocketIOServer } from "socket.io";
 import SocketEvent from "../../domain/enum/socketevent.js";
-import { INotification } from "../../interface/INotification.js";
+// import { INotification } from "../../interface/INotification.js";
 
 export default class SocketController implements ISocketController {
   private chatService: IChatMsgService;
@@ -13,7 +13,10 @@ export default class SocketController implements ISocketController {
   private _tutorSocketMap: Map<string, string>;
   private _adminSocketMap: Map<string, string>;
 
-  constructor(chatService: IChatMsgService,io:SocketIOServer<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
+  constructor(
+    chatService: IChatMsgService,
+    io: SocketIOServer<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
+  ) {
     this.chatService = chatService;
     this._io = io;
     this._userSocketMap = new Map();
@@ -25,23 +28,25 @@ export default class SocketController implements ISocketController {
     console.log(`Client connected: ${socket.handshake.query.userId}`);
     const userId = socket.handshake.query.userId as string;
     const role = socket.handshake.query.role as string;
-    // switch (role) {
-    //   case "user":
-    //     this._userSocketMap.set(userId as string, socket.id);
-    //     socket.join("user-room");
-    //     break;
-    //   case "tutor":
-    //     this._tutorSocketMap.set(userId as string, socket.id);
-    //     socket.join("tutor-room");
-    //     break;
-    //   case "admin":
-    //     this._adminSocketMap.set(userId as string, socket.id);
-    //     socket.join("admin-room");
-    //     break;
-    //   default:
-    //     console.error(`Invalid role: ${role}`);
-    //     return;
-    // }
+
+    
+    switch (role) {
+      case "user":
+        this._userSocketMap.set(userId, socket.id);
+        socket.join("user-room");
+        break;
+      case "tutor":
+        this._tutorSocketMap.set(userId, socket.id);
+        socket.join("tutor-room");
+        break;
+      case "admin":
+        this._adminSocketMap.set(userId, socket.id);
+        socket.join("admin-room");
+        break;
+      default:
+        console.error(`Invalid role: ${role}`);
+        return;
+    }
 
     socket.emit(
       SocketEvent.GetOnlineUsers,
@@ -53,7 +58,6 @@ export default class SocketController implements ISocketController {
     });
 
     socket.on(SocketEvent.Message, async (data) => {
-      console.log(data)
       const {
         roomId,
         recieverId,
@@ -63,21 +67,38 @@ export default class SocketController implements ISocketController {
         message_type,
       } = data;
 
-      const savedMessage = await this.chatService.saveMessage(
-        roomId,
-        senderId,
-        message,
-        message_time,
-        message_type
-      );
-      const filteredId=recieverId.filter((val: string)=>val != senderId)
-      const toSocketId = this._userSocketMap.get(filteredId[0]);
-      if (toSocketId) {
-        this._io.to(toSocketId).emit(SocketEvent.NewBadge, savedMessage);
+      // Validate inputs
+      if (!roomId || !recieverId || !senderId || !message || !message_time) {
+        console.error("Invalid message data:", data);
+        return;
       }
-      this._io
-        .to(String(savedMessage?.chatId))
-        .emit(SocketEvent.NewMessage, savedMessage);
+
+      try {
+        const savedMessage = await this.chatService.saveMessage(
+          roomId,
+          senderId,
+          message,
+          message_time,
+          message_type
+        );
+        if (!savedMessage) {
+          console.error("Failed to save message:", data);
+          return;
+        }
+
+        // Handle recieverId as a string
+        const toSocketId = recieverId !== senderId ? this._userSocketMap.get(recieverId) : null;
+        if (toSocketId) {
+          this._io.to(toSocketId).emit(SocketEvent.NewBadge, savedMessage);
+        }
+
+        // Emit message to room
+        this._io
+          .to(String(savedMessage.chatId))
+          .emit(SocketEvent.NewMessage, savedMessage);
+      } catch (error) {
+        console.error("Error processing message:", error);
+      }
     });
 
     // socket.on(SocketEvent.InitiateVideoCall, ({ to, signalData, myId }) => {
@@ -125,8 +146,7 @@ export default class SocketController implements ISocketController {
 
     // socket.on(SocketEvent.ToTheTutor, async (data) => {
     //   const Notification = await this.chatService.saveNotification(data);
-
-    //   const to = Notification?.to?.toString(); 
+    //   const to = Notification?.to?.toString();
     //   if (to) {
     //     const toSocketId = this._tutorSocketMap.get(to);
     //     if (toSocketId) {
@@ -153,8 +173,7 @@ export default class SocketController implements ISocketController {
 
     // socket.on(SocketEvent.ToTheUser, async (data) => {
     //   const Notification = await this.chatService.saveNotification(data);
-
-    //   const to = Notification?.to?.toString(); // Convert ObjectId to string safely
+    //   const to = Notification?.to?.toString();
     //   if (to) {
     //     const toSocketId = this._userSocketMap.get(to);
     //     if (toSocketId) {
@@ -186,9 +205,9 @@ export default class SocketController implements ISocketController {
     }
   }
 
-  emitToAdmins(event: string, data: INotification) {
-    for (const [_, socketId] of this._adminSocketMap) {
-      this._io.to(socketId).emit(event, data);
-    }
-  }
+  // emitToAdmins(event: string, data: INotification) {
+  //   for (const [_, socketId] of this._adminSocketMap) {
+  //     this._io.to(socketId).emit(event, data);
+  //   }
+  // }
 }

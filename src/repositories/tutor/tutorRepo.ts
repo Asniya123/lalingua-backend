@@ -7,6 +7,7 @@ import CourseModel from "../../models/courseModel.js";
 import EnrollmentModel from "../../models/enrollmentModel.js";
 import { ICourse } from "../../interface/ICourse.js";
 import { IStudent } from "../../interface/IStudent.js";
+import languageModel from "../../models/languageModel.js";
 
 
 
@@ -95,9 +96,32 @@ class TutorRepository implements ITutorRepository{
         return await tutorModel.findById(tutorId)
     }
 
-    async updateTutorProfile(tutorId: string, updateData: Partial<ITutor>): Promise<ITutor | null> {
-        return await tutorModel.findByIdAndUpdate(tutorId, updateData, { new: true, runValidators: true });
+   async updateTutorProfile(tutorId: string, updateData: Partial<ITutor>): Promise<ITutor | null> {
+    try {
+      const updatedTutor = await tutorModel.findByIdAndUpdate(
+        tutorId,
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+      if (!updatedTutor) {
+        console.error(`Repository: No tutor found for ID ${tutorId}`);
+      } 
+      return updatedTutor;
+    } catch (error) {
+      console.error("Repository: Mongoose update error:", error);
+      throw error;
     }
+  }
+
+  async findLanguageById(languageId: string): Promise<any | null> {
+    try {
+      const language = await languageModel.findById(languageId);
+      return language;
+    } catch (error) {
+      console.error(`Repository: Error fetching language ${languageId}:`, error);
+      return null;
+    }
+  }
     
 
     async uploadProfilePicture(tutorId: string, profilePicture: string): Promise<ITutor | null> {
@@ -151,40 +175,53 @@ class TutorRepository implements ITutorRepository{
     }
 
 
-    async  getEnrolledStudentsByTutor(tutorId: string): Promise<IEnrolledStudent[]>{
+    async getEnrolledStudentsByTutor(tutorId: string): Promise<IEnrolledStudent[]> {
         try {
-            const courses = await CourseModel.find({  tutorId }).select('_id courseTitle');
-            const courseIds = courses.map(course => course._id);
-
-            const enrollments = await EnrollmentModel.find({ courseId: { $in: courseIds } })
+          const courses = await CourseModel.find({ tutorId }).select('_id courseTitle');
+          const courseIds = courses.map(course => course._id);
+      
+          const enrollments = await EnrollmentModel.find({ courseId: { $in: courseIds } })
             .populate<{ courseId: ICourse }>('courseId', '_id courseTitle')
             .populate<{ userId: IStudent }>('userId', '_id name profilePicture');
-
-            const enrolledStudents: IEnrolledStudent[] = enrollments
-        .filter(enrollment => 
-          enrollment.courseId && 
-          enrollment.courseId._id && 
-          enrollment.userId && 
-          enrollment.userId._id && 
-          enrollment.userId.name
-        )
-        .map(enrollment => ({
-          student: {
-            _id: enrollment.userId._id.toString(),
-            name: enrollment.userId.name,
-            profilePicture: enrollment.userId.profilePicture,
-          },
-          course: {
-            _id: enrollment.courseId._id.toString(),
-            courseTitle: enrollment.courseId.courseTitle,
-          },
-        }));
-
-        return enrolledStudents;
+      
+          type PopulatedEnrollment = {
+            courseId: ICourse;
+            userId: IStudent;
+          } & typeof enrollments[number]; 
+      
+          const enrolledStudents: IEnrolledStudent[] = enrollments.reduce<IEnrolledStudent[]>(
+            (acc: IEnrolledStudent[], enrollment: PopulatedEnrollment) => {
+              if (
+                enrollment.courseId &&
+                enrollment.courseId._id &&
+                enrollment.userId &&
+                enrollment.userId._id &&
+                enrollment.userId.name
+              ) {
+                acc.push({
+                  student: {
+                    _id: enrollment.userId._id.toString(),
+                    name: enrollment.userId.name,
+                    profilePicture: enrollment.userId.profilePicture,
+                  },
+                  course: {
+                    _id: enrollment.courseId._id.toString(),
+                    courseTitle: enrollment.courseId.courseTitle,
+                  },
+                });
+              }
+              return acc;
+            },
+            [] 
+          );
+      
+          return enrolledStudents;
         } catch (error) {
-            throw new Error('Failed to fetch enrolled students from database');
+          throw new Error('Failed to fetch enrolled students from database');
         }
-    }
+      }
+      
+    
 }
 
 export default new TutorRepository()

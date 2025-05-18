@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { ObjectId, Document, Schema, Types, FilterQuery } from "mongoose";
 import { ILanguage } from "./ILanguage.js";
+import { ITutor } from "./ITutor.js";
+import { ITutorDisplay } from "./ICourse.js";
 
 export interface IStudent extends Document {
     username: any;
@@ -19,6 +21,29 @@ export interface IStudent extends Document {
     comparePassword(candidatePassword: string): Promise<boolean>;
     enrollments?: IEnrollment[];
 }
+
+
+export interface IEnrollment {
+    paymentAmount: number;
+    courseId: Types.ObjectId; 
+    paymentId: string;
+    orderId: string; 
+    amount: number; 
+    currency: string; 
+    status: 'pending' | 'completed' | 'failed';
+    enrolledAt: Date; 
+  }
+
+  export interface IEnrolledCourse {
+    _id: string | Types.ObjectId;
+    courseTitle: string;
+    description?: string;
+    imageUrl?: string;
+    pricePaid?: number;
+    enrolledDate?: string;
+    status?: string;
+    tutor?: ITutorDisplay; 
+  }
 
 export interface AuthenticatedRequest extends Request{
     data: any;
@@ -111,13 +136,3 @@ export interface IStudentController {
 
 
 
-export interface IEnrollment {
-    paymentAmount: number;
-    courseId: Types.ObjectId; 
-    paymentId: string;
-    orderId: string; 
-    amount: number; 
-    currency: string; 
-    status: 'pending' | 'completed' | 'failed';
-    enrolledAt: Date; 
-  }

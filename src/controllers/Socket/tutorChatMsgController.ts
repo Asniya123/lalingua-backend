@@ -18,7 +18,6 @@ export default class TutorChatMsgController implements ITutorChatMsgcontroller {
     try {
       const search = isString(req.query.search) ? req.query.search : "";
       const { tutorId } = req.params;
-      console.log(`Received getTutorChats request: tutorId=${tutorId}, search=${search}`);
       if (!tutorId) {
         throw new CustomError("Tutor ID is required", HttpStatusCode.BAD_REQUEST);
       }

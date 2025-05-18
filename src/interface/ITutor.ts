@@ -5,7 +5,7 @@ export interface ITutor extends Document {
     _id: ObjectId;
     name: string;
     email: string;
-    mobile: number;
+    mobile: string;
     password: string;
     otp: string;
     expiresAt: Date;
@@ -22,6 +22,7 @@ export interface ITutor extends Document {
     is_blocked: boolean;
     profilePicture?: string
     status: 'pending' | 'approved' | 'rejected'
+  
     
 }
 
@@ -34,7 +35,7 @@ export interface ILogin{
         email: string;
         status: 'pending' | 'approved' | 'rejected'; 
         is_blocked:boolean;
-        mobile: number;
+        mobile: string;
         profilePicture?: string
     }
 }
@@ -68,7 +69,7 @@ export interface ITutorRepository {
     getTutorProfile(tutorId: string): Promise<ITutor | null >
     updateTutorProfile(tutorId: string, updateData: Partial<ITutor>): Promise<ITutor | null>
     uploadProfilePicture(tutorId: string, profilePicture: string): Promise<ITutor | null>
-
+    findLanguageById(languageId: string): Promise<any | null> 
     updatePasswordAndClearOtp(email: string, password: string): Promise<ITutor | null>
 
     changePassword(tutorId: string, newPassword:string): Promise<ITutor | null>
@@ -89,6 +90,7 @@ export interface ITutorService {
 
     getTutorProfile(tutorId: string): Promise<ITutor | null >
     updateTutorProfile(tutorId: string, profileData: Partial<ITutor>): Promise<ITutor | null>
+    validateLanguage(languageId: string): Promise<boolean>
     uploadProfilePicture(tutorId: string, profilePicture: string): Promise<ITutor | null >
 
     forgotPassword(email: string): Promise<void>

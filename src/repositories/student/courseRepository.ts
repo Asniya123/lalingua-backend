@@ -159,7 +159,7 @@ class CourseRepository implements ISCourseRepository {
         })
         .exec();
   
-      // Map courses to include tutor field, consistent with listCourses
+      
       const mappedCourses = courses.map(course => {
         const tutorIdObj = course.tutorId && typeof course.tutorId === 'object' && 'name' in course.tutorId && typeof course.tutorId.name === 'string'
           ? (course.tutorId as ITutorDisplay)

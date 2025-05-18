@@ -1,25 +1,37 @@
 import { model, Schema } from "mongoose";
-import { IEnrollment } from "../interface/IEnrollment.js";
+import { IEnrollment } from "../interface/IStudent.js";
+// import { IEnrollment } from "../interface/IEnrollment.js";
 
-const EnrollmentSchema = new Schema<IEnrollment>({
-    userId: {
-        type: String,
-        required: true,
-    },
-    courseId: {
+
+const EnrollmentSchema: Schema = new Schema(
+    {
+      userId: {
         type: Schema.Types.ObjectId,
-        ref: 'Course',
+        ref: "User",
         required: true,
-    },
-    enrolledAt: {
+      },
+      courseId: {
+        type: Schema.Types.ObjectId,
+        ref: "Course",
+        required: true,
+      },
+      pricePaid: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      enrolledDate: {
         type: Date,
         default: Date.now,
+      },
+      status: {
+        type: String,
+        enum: ["Active", "Cancelled", "Expired"],
+        default: "Active",
+      },
     },
-    progress: {
-        type: Number,
-        default: 0,
-    }
-});
+    { timestamps: true }
+  );
 
 
 const EnrollmentModel = model<IEnrollment>('Enrollment', EnrollmentSchema);

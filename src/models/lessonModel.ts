@@ -22,7 +22,21 @@ const LessonSchema = new Schema<ILesson>({
   introVideoUrl: {
     type: String,
     required: true
-  }
+  },
+  syllabus: {
+      title: {
+        type: String,
+        required: true,
+        trim: true,
+        minlength: 3,
+        maxlength: 100,
+      },
+      description: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+      },
+  },
 });
 
 const LessonModel = model<ILesson>("Lesson", LessonSchema);

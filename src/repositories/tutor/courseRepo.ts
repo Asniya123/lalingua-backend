@@ -3,19 +3,17 @@ import CourseModel from "../../models/courseModel.js"
 
 class CourseRepository implements ICourseRepository {
   
-    async addCourse(courseData: ICourse): Promise<ICourse | null> {
-
-        try {
-         
-          const existingCourse = await CourseModel.findOne({ courseTitle: courseData.courseTitle });
-          if (existingCourse) return null; 
-          let result = await CourseModel.create(courseData);
-   
-          return result
-        } catch (error) {
-          throw new Error(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-     }
+  async addCourse(courseData: Omit<ICourse, '_id'>): Promise<ICourse | null> {
+    try {
+      const existingCourse = await CourseModel.findOne({ courseTitle: courseData.courseTitle });
+      if (existingCourse) return null;
+  
+      const result = await CourseModel.create(courseData);
+      return result;
+    } catch (error) {
+      throw new Error(`Database error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
     
      async listCourses(tutorId: string, page: number, limit: number): Promise<{ courses: ICourse[]; total: number }> {
       try {

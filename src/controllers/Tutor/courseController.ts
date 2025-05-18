@@ -11,12 +11,12 @@ export default class CourseController implements ICourseController{
 
   async addCourse(req: Request, res: Response): Promise<void> {
     try {
-      if(!req.tutor || !req.tutor._id){
-        res.status(403).json({error: 'Unautherized access'})
-        return
+      if (!req.tutor || !req.tutor._id) {
+        res.status(403).json({ error: "Unauthorized access" });
+        return;
       }
-
-      const tutorId = req.tutor._id
+  
+      const tutorId = req.tutor._id;
       const { courseTitle, imageUrl, category, language, description, regularPrice } = req.body;
   
       if (!courseTitle || !imageUrl || !category || !language || !description || regularPrice <= 0) {
@@ -31,13 +31,16 @@ export default class CourseController implements ICourseController{
         language,
         description,
         regularPrice,
-        tutorId
+        tutorId,
       });
+  
       if (!course) {
         res.status(400).json({ error: "Failed to create course" });
         return;
       }
+  
       const sanitizedCourse: ICourse = {
+        _id: course._id, 
         courseTitle: course.courseTitle,
         imageUrl: course.imageUrl,
         category: course.category,
@@ -48,7 +51,7 @@ export default class CourseController implements ICourseController{
         createdAt: course.createdAt,
         updatedAt: course.updatedAt,
         tutorId: course.tutorId,
-        _id: ""
+        isBlock: course.isBlock,
       };
   
       res.status(201).json({ message: "Course added successfully", course: sanitizedCourse });

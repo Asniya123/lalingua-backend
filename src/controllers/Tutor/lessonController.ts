@@ -11,9 +11,9 @@ export default class LessonController implements ILessonController{
 
     async addLesson(req: Request, res: Response): Promise<void> {
       try {
-        const { title, description, videoUrl, courseId, introVideoUrl} = req.body;
+        const { title, description, videoUrl, courseId, introVideoUrl, syllabus} = req.body;
     
-        if (!title || !description || !videoUrl || !courseId || !introVideoUrl) {
+        if (!title || !description || !videoUrl || !courseId || !introVideoUrl || !syllabus) {
           res.status(400).json({ error: 'All fields are required' });
           return;
         }
@@ -24,6 +24,7 @@ export default class LessonController implements ILessonController{
           videoUrl,
           courseId,
           introVideoUrl,
+          syllabus
         });
     
         res.status(201).json({ message: 'Lesson added successfully', lesson });
@@ -81,7 +82,7 @@ export default class LessonController implements ILessonController{
       async editLesson(req: Request<{ lessonId: string }, {}, Partial<ILesson>>, res: Response): Promise<void> {
         try {
           const { lessonId } = req.params;
-          const { title, description, videoUrl, courseId } = req.body;
+          const { title, description, videoUrl, courseId, syllabus} = req.body;
     
           if (!lessonId) {
             res.status(400).json({ error: "Lesson ID is required" });
@@ -93,6 +94,7 @@ export default class LessonController implements ILessonController{
             description,
             videoUrl,
             courseId,
+            syllabus
           };
     
           const updatedLesson = await this.lessonService.editLesson(lessonId, lessonData);

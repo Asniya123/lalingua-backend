@@ -34,3 +34,5 @@ export interface INotificationController{
     getUserNotifications(req: Request, res: Response): Promise<void>
     getAdminNotifications(req: Request, res: Response): Promise<void>
 }
+
+

@@ -117,7 +117,7 @@ class TutorService implements ITutorService {
         const newTutor = await this.tutorRepo.create({
             email: tutorData.email,
             name: tutorData.name || "Unknown",
-            mobile: 0,
+            mobile: '0',
             googleId: tutorData.uid,
             isVerified: true,
             otp: "",
@@ -203,9 +203,15 @@ class TutorService implements ITutorService {
     async updateTutorProfile(tutorId: string, profileData: Partial<ITutor>): Promise<ITutor | null> {
         const updatedTutor = await this.tutorRepo.updateTutorProfile(tutorId, profileData);
         if (!updatedTutor) {
-            throw new Error('Failed to update profile');
+          console.error(`Service: No tutor found or update failed for ID ${tutorId}`);
+          throw new Error('Failed to update profile');
         }
         return updatedTutor;
+    }
+    
+    async validateLanguage(languageId: string): Promise<boolean> {
+        const language = await this.tutorRepo.findLanguageById(languageId);
+        return !!language;
     }
 
     async uploadProfilePicture(tutorId: string, profilePicture: string): Promise<ITutor | null> {

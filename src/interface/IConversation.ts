@@ -6,13 +6,14 @@ import { Request, Response } from "express";
 import { ITutor } from "./ITutor.js";
 
 export interface IConversation extends Omit<Document, keyof Document> {
-    _id: mongoose.Types.ObjectId;
-    participants: mongoose.Types.ObjectId[];
-    messages: mongoose.Types.ObjectId[];
-    lastMessage: Types.ObjectId | null;
-    name: string;
-    profilePicture: string | null;
-  }
+  _id: mongoose.Types.ObjectId;
+  participants: mongoose.Types.ObjectId[];
+  participantsRef: string[]; 
+  messages: mongoose.Types.ObjectId[];
+  lastMessage: Types.ObjectId | null;
+  name: string;
+  profilePicture: string | null;
+}
 
 export interface IMessage extends Document {
     roomId: string;
@@ -33,7 +34,12 @@ export interface IChatData {
     unReadCount: number;
   }
   
-
+export interface Participant {
+  _id: mongoose.Types.ObjectId;
+  name?: string;
+  username?: string;
+  profilePicture?: string | null;
+}
 
 export interface IChatRepository{
     getMessagesByRoom(roomId: string): Promise<IConversation>
@@ -53,11 +59,7 @@ export interface IChatRepository{
 }
 
 
-// export interface IChatService{
-//     saveAdminNotification(data:INotification): Promise<INotification>
-//     saveNotification(data:INotification): Promise<INotification >
-//     saveMessage( roomId: string, senderId: string,  message: string, message_time: Date, message_type: string ): Promise<IMessage | null >
-// }
+
 
 
 export interface IChatMsgService{
@@ -69,8 +71,12 @@ export interface IChatMsgService{
         search: string,
         tutorId: string | undefined
       ): Promise<IChatData[] | null> 
-    saveAdminNotification(notification: INotification): Promise<INotification>;
-    saveNotification(notification: INotification): Promise<INotification>;
+    getRoomById(
+        roomId: string,
+        userId: string
+      ): Promise<IConversation | null>
+    // saveAdminNotification(notification: INotification): Promise<INotification>;
+    // saveNotification(notification: INotification): Promise<INotification>;
     saveMessage(roomId: string, senderId: string, message: string, message_time: Date, message_type: string): Promise<IMessage | null>
 }
 

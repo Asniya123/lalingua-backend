@@ -1,5 +1,5 @@
 
-import { ILesson, ILessonRepository, ILessonService } from "../../interface/ILesson.js";
+import { ILesson, ILessonInput, ILessonRepository, ILessonService } from "../../interface/ILesson.js";
 import lessonRepository from "../../repositories/tutor/lessonRepository.js";
 
 class LessonService implements ILessonService{
@@ -8,35 +8,41 @@ class LessonService implements ILessonService{
         this.lessonRepository = lessonRepository
     }
 
-    async addLesson(lessonData: {
-      title: string;
-      description: string;
-      videoUrl: string;
-      courseId: string;
-      introVideoUrl: string;
-    }): Promise<ILesson | null> {
-      if (!lessonData.title || !lessonData.description || !lessonData.videoUrl || !lessonData.courseId || !lessonData.introVideoUrl) {
-        throw new Error('All fields are required');
-      }
-    
-      try {
-        
-        const existingLessons = await this.lessonRepository.getLessonsByCourseId(lessonData.courseId);
-        console.log(
-          `Existing lessons for courseId "${lessonData.courseId}":`,
-          existingLessons.map((lesson: { title: any; _id: any; }) => ({ title: lesson.title, id: lesson._id }))
-        );
-    
-        const newLesson = await this.lessonRepository.addLesson(lessonData);
-        if (!newLesson) {
-          throw new Error('Lesson already exists');
-        }
-        return newLesson;
-      } catch (error) {
-        console.error('Error in lessonService.addLesson:', error);
-        throw error;
-      }
+    async addLesson(lessonData: ILessonInput): Promise<ILesson | null> {
+  if (
+    !lessonData.title ||
+    !lessonData.description ||
+    !lessonData.videoUrl ||
+    !lessonData.courseId ||
+    !lessonData.introVideoUrl ||
+    !lessonData.syllabus
+  ) {
+    throw new Error('All fields are required');
+  }
+
+  try {
+    const existingLessons = await this.lessonRepository.getLessonsByCourseId(lessonData.courseId.toString()); 
+
+    console.log(
+      `Existing lessons for courseId "${lessonData.courseId}":`,
+      existingLessons.map((lesson: { title: any; _id: any }) => ({
+        title: lesson.title,
+        id: lesson._id,
+      }))
+    );
+
+    const newLesson = await this.lessonRepository.addLesson(lessonData);
+    if (!newLesson) {
+      throw new Error('Lesson already exists');
     }
+
+    return newLesson;
+  } catch (error) {
+    console.error('Error in lessonService.addLesson:', error);
+    throw error;
+  }
+}
+
 
     async listLesson(courseId: string, page: number, limit: number): Promise<{ lessons: ILesson[]; total: number }> {
       if (!courseId) {

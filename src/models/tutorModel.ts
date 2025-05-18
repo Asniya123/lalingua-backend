@@ -13,7 +13,7 @@ const TutorSchema = new Schema<ITutor>(
       unique: true,
     },
     mobile: {
-      type: Number,
+      type: String,
     },
     password: {
       type: String,
@@ -76,6 +76,7 @@ const TutorSchema = new Schema<ITutor>(
       default: "pending",
       enum: ["pending", "approved", "rejected"],
     },
+   
   },
   {
     timestamps: true,

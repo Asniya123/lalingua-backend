@@ -8,6 +8,7 @@ export interface ILesson extends Document {
   videoUrl: string;
   courseId: Types.ObjectId;
   introVideoUrl: string;
+  syllabus?: { title: string; description?: string };
 }
 
 export interface ILessonInput {
@@ -15,7 +16,8 @@ export interface ILessonInput {
   description: string;
   videoUrl: string;
   courseId: string | Schema.Types.ObjectId; 
-  introVideoUrl: string
+  introVideoUrl: string;
+  syllabus?: { title: string; description?: string };
 }
 
 export interface ILessonRepository {
@@ -29,13 +31,7 @@ export interface ILessonRepository {
 }
 
 export interface ILessonService {
-  addLesson(lessonData: {
-    title: string;
-    description: string;
-    videoUrl: string;
-    courseId: string | Schema.Types.ObjectId;
-    introVideoUrl: string;
-  }): Promise<ILesson | null>;
+  addLesson(lessonData: ILessonInput): Promise<ILesson | null>;
   listLesson(courseId: string, page: number, limit: number): Promise<{ lessons: ILesson[]; total: number }>
   getLesson(lessonId: string): Promise<ILesson | null>;
   editLesson(lessonId: string, lessonData: Partial<ILesson>): Promise<ILesson | null>;

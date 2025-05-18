@@ -22,7 +22,7 @@ export default class Tutorcontroller implements ITutorController {
       const { tutor, accessToken, refreshToken } =
         await this.tutorService.googlesignIn(tutorData);
 
-      // Set cookies for both tokens
+  
       res.cookie("tutorToken", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -232,12 +232,13 @@ export default class Tutorcontroller implements ITutorController {
         res.status(403).json({ message: "Unauthorized access" });
         return;
       }
-
+  
       const tutorId = req.tutor._id;
       const {
         name,
         email,
         mobile,
+        documents,
         qualification,
         language,
         country,
@@ -246,34 +247,50 @@ export default class Tutorcontroller implements ITutorController {
         dateOfBirth,
         bio,
       } = req.body;
-
+  
       const updateData: Partial<ITutor> = {};
-      if (name) updateData.name = name;
-      if (email) updateData.email = email;
-      if (mobile) updateData.mobile = mobile;
-      if (qualification) updateData.qualification = qualification;
-      if (language) updateData.language = language;
-      if (country) updateData.country = country;
-      if (experience) updateData.experience = experience;
-      if (specialization) updateData.specialization = specialization;
-      if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
-      if (bio) updateData.bio = bio;
-
-      const updateTutor = await this.tutorService.updateTutorProfile(
-        tutorId,
-        updateData
-      );
-
-      if (!updateTutor) {
+  
+      
+      if (name !== undefined) updateData.name = name;
+      if (email !== undefined) updateData.email = email;
+      if (mobile !== undefined) updateData.mobile = mobile;
+      if (documents !== undefined) updateData.documents = documents;
+      if (qualification !== undefined) updateData.qualification = qualification;
+      if (language !== undefined) {
+        if (language) {
+         
+          const isValidLanguage = await this.tutorService.validateLanguage(language);
+          if (!isValidLanguage) {
+            res.status(400).json({ message: "Invalid language ID" });
+            return;
+          }
+        }
+        updateData.language = language;
+      }
+      if (country !== undefined) updateData.country = country;
+      if (experience !== undefined) updateData.experience = experience;
+      if (specialization !== undefined) updateData.specialization = specialization;
+      if (dateOfBirth !== undefined) {
+        if (dateOfBirth && isNaN(new Date(dateOfBirth).getTime())) {
+          res.status(400).json({ message: "Invalid date of birth" });
+          return;
+        }
+        updateData.dateOfBirth = dateOfBirth;
+      }
+      if (bio !== undefined) updateData.bio = bio;
+  
+      
+  
+      const updatedTutor = await this.tutorService.updateTutorProfile(tutorId, updateData);
+  
+      if (!updatedTutor) {
         res.status(404).json({ message: "Failed to update profile" });
         return;
       }
-
-      res
-        .status(200)
-        .json({ message: "Profile updated successfully", tutor: updateTutor });
+  
+      res.status(200).json({ message: "Profile updated successfully", tutor: updatedTutor });
     } catch (error) {
-      console.error("Error updating tutor profile:", error);
+      console.error("Controller: Error updating tutor profile:", error);
       res.status(500).json({ message: "Internal Server Error" });
     }
   }

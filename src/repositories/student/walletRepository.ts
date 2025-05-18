@@ -55,7 +55,7 @@ class walletReposiotry implements IWalletRepository{
       if (isNaN(validatedAmount) || validatedAmount <= 0) {
         throw new CustomError('Invalid refund amount', HttpStatusCode.BAD_REQUEST);
       }
-      const amountInRupees = validatedAmount; // No conversion if enrollment.amount is in rupees
+      const amountInRupees = validatedAmount; 
   
       const newTransaction = {
         enrolledId: enrolledId.trim(),

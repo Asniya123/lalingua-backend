@@ -1,7 +1,7 @@
 import mongoose, { isValidObjectId } from "mongoose";
 import { ICategoryRepository } from "../../interface/ICategory.js";
 import {ICourse,ISCourseRepository,ISCourseService,T,} from "../../interface/ICourse.js";
-import { IEnrollment, IStudentRepository } from "../../interface/IStudent.js";
+import { IEnrolledCourse, IEnrollment, IStudentRepository } from "../../interface/IStudent.js";
 import categoryRepository from "../../repositories/admin/categoryRepository.js";
 import courseRepository from "../../repositories/student/courseRepository.js";
 import studentRepo from "../../repositories/student/studentRepo.js";
@@ -211,13 +211,47 @@ export class CourseService implements ISCourseService {
     }
   }
 
-  async getEnrolledCourses(userId: string): Promise<ICourse[]> {
+  async getEnrolledCourses(userId: string): Promise<IEnrolledCourse[]> {
+    try {
     const student = await this.studentRepository.findById(userId);
-    if (!student || !student.enrollments) return [];
-    const courseIds = student.enrollments.map(
-      (enrollment) => enrollment.courseId
-    );
-    return await this.courseRepository.findByIds(courseIds);
+    if (!student) return [];
+  
+    const courseIds = student.enrollments
+      ? student.enrollments.map((enrollment) => enrollment.courseId)
+      : [];
+    const courses = await this.courseRepository.findByIds(courseIds);
+  
+    const enrolledCourses: IEnrolledCourse[] = courses.map((course) => {
+      const enrollment = student.enrollments?.find(
+        (enrollment) => enrollment.courseId.toString() === course._id!.toString() 
+      );
+    
+      return {
+        _id: course._id!, 
+        courseTitle: course.courseTitle || "Untitled Course",
+        imageUrl: course.imageUrl,
+        category: course.category,
+        language: course.language,
+        tutorId: course.tutorId,
+        description: course.description,
+        regularPrice: course.regularPrice,
+        buyCount: course.buyCount,
+        isBlock: course.isBlock,
+        lessons: course.lessons,
+        createdAt: course.createdAt,
+        updatedAt: course.updatedAt,
+        tutor: course.tutor,
+        pricePaid: enrollment?.amount || 0,
+        enrolledDate: enrollment?.enrolledAt?.toISOString() || undefined,
+        status: enrollment?.status || "Unknown",
+      };
+    });
+  
+    return enrolledCourses;
+  } catch (error) {
+    console.error('Error fetching enrolled courses:', error);
+    throw new Error('Failed to retrieve enrolled courses');
+  }
   }
 
   async cancelEnrollment(userId: string, courseId: string): Promise<{ success: boolean; refundAmount: number; message: string }> {

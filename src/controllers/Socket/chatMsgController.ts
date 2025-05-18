@@ -48,7 +48,7 @@ export default class ChatMsgController implements IChatMsgController {
       }
 
       const users = await this.chatMsgService.getChats(search, userId);
-
+     
       res.status(HttpStatusCode.OK).json({
         success: true,
         message: "Chats Fetched",
@@ -70,56 +70,60 @@ export default class ChatMsgController implements IChatMsgController {
 
   async getRoom(req: Request, res: Response): Promise<void> {
     try {
-      const { recieverId, senderId } = req.params;
-      if (!recieverId || !senderId) {
-        throw new CustomError("Receiver ID and Sender ID are required", HttpStatusCode.BAD_REQUEST);
-      }
+        const { receiverId, senderId } = req.params;
+       
 
-      const room = await this.chatMsgService.getRoom(recieverId, senderId);
+        if (!receiverId || !senderId) {
+            throw new CustomError("Receiver ID and Sender ID are required", HttpStatusCode.BAD_REQUEST);
+        }
 
-      res.status(HttpStatusCode.OK).json({
-        success: true,
-        message: "Room Fetched",
-        room,
-      });
+        const room = await this.chatMsgService.getRoom(receiverId, senderId);
+
+        res.status(HttpStatusCode.OK).json({
+            success: true,
+            message: "Room Fetched",
+            room,
+        });
     } catch (error) {
-      const statusCode =
-        error instanceof CustomError && error.statusCode
-          ? error.statusCode
-          : HttpStatusCode.INTERNAL_SERVER_ERROR;
-      res.status(statusCode).json({
-        success: false,
-        message: "Failed to fetch room",
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+        const statusCode =
+            error instanceof CustomError && error.statusCode
+                ? error.statusCode
+                : HttpStatusCode.INTERNAL_SERVER_ERROR;
 
-  async getRoomMessage(req: Request, res: Response): Promise<void> {
-    const { roomId, userId } = req.params;
-    try {
+        console.error(`Error in getRoom for receiverId: ${req.params.receiverId}, senderId: ${req.params.senderId}:`, error);
+        res.status(statusCode).json({
+            success: false,
+            message: "Failed to fetch room",
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+}
+
+async getRoomMessage(req: Request, res: Response): Promise<void> {
+  const { roomId, userId } = req.params;
+  try {
       if (!roomId || !userId) {
-        throw new CustomError("Room ID and User ID are required", HttpStatusCode.BAD_REQUEST);
+          throw new CustomError("Room ID and User ID are required", HttpStatusCode.BAD_REQUEST);
       }
 
       const room = await this.chatMsgService.getRoomMessage(roomId, userId);
 
       res.status(HttpStatusCode.OK).json({
-        success: true,
-        message: "Room Messages Fetched",
-        room: [room],
+          success: true,
+          message: "Room Messages Fetched",
+          room, 
       });
-    } catch (error) {
+  } catch (error) {
       const statusCode =
-        error instanceof CustomError && error.statusCode
-          ? error.statusCode
-          : HttpStatusCode.INTERNAL_SERVER_ERROR;
+          error instanceof CustomError && error.statusCode
+              ? error.statusCode
+              : HttpStatusCode.INTERNAL_SERVER_ERROR;
       console.error(`Error in getRoomMessage for roomId: ${roomId}, userId: ${userId}:`, error);
       res.status(statusCode).json({
-        success: false,
-        message: "Failed to fetch room messages",
-        error: error instanceof Error ? error.message : String(error),
+          success: false,
+          message: "Failed to fetch room messages",
+          error: error instanceof Error ? error.message : String(error),
       });
-    }
   }
+}
 }

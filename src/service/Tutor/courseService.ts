@@ -12,19 +12,25 @@ class CourseService implements ICourseService{
         courseTitle: string;
         imageUrl: string;
         category: string;
-        language: string; 
+        language: string;
         description: string;
         regularPrice: number;
-        tutorId: string
+        tutorId: string;
       }
     ): Promise<ICourse | null> {
-    
-      if (!courseData.courseTitle || !courseData.imageUrl || !courseData.category || 
-          !courseData.language || !courseData.description || courseData.regularPrice <= 0 || !courseData.tutorId) {
+      if (
+        !courseData.courseTitle ||
+        !courseData.imageUrl ||
+        !courseData.category ||
+        !courseData.language ||
+        !courseData.description ||
+        courseData.regularPrice <= 0 ||
+        !courseData.tutorId
+      ) {
         throw new Error("All fields are required, and price must be greater than 0.");
       }
-  
-      const course: ICourse = {
+    
+      const course: Omit<ICourse, '_id'> = {
         courseTitle: courseData.courseTitle,
         imageUrl: courseData.imageUrl,
         category: courseData.category,
@@ -33,9 +39,9 @@ class CourseService implements ICourseService{
         regularPrice: courseData.regularPrice,
         buyCount: 0,
         tutorId: courseData.tutorId,
-        _id: ""
+        isBlock: false,
       };
-  
+    
       const existingCourse = await this.courseRepository.addCourse(course);
       if (!existingCourse) throw new Error("Course already exists");
       return existingCourse;

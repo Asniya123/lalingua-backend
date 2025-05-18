@@ -24,7 +24,7 @@ const corsOptions: CorsOptions = {
 };
 app.use(cors(corsOptions));
 
-const port: string | number =  5000;
+const port: string | number =   5000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

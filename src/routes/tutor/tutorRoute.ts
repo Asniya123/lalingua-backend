@@ -51,9 +51,9 @@ router.delete("/deleteLesson/:lessonId", lessonController.deleteLesson.bind(less
 
 
 //Chat
-router.get('/tutor/chat/chats/:tutorId', tutorAuthenticate, tutorChatMsgController.getChats.bind(tutorChatMsgController))
-router.get('/tutor/chat/room/:recieverId/:senderId', tutorAuthenticate, tutorChatMsgController.getRoom.bind(tutorChatMsgController))
-router.get('/tutor/chat/room-message/:roomId/:tutorId', tutorAuthenticate, tutorChatMsgController.getRoomMessage.bind(tutorChatMsgController))
+router.get('/chat/chats/:tutorId', tutorAuthenticate, tutorChatMsgController.getChats.bind(tutorChatMsgController))
+router.get('/chat/room/:receiverId/:senderId', tutorAuthenticate, tutorChatMsgController.getRoom.bind(tutorChatMsgController))
+router.get('/chat/room-message/:roomId/:tutorId', tutorAuthenticate, tutorChatMsgController.getRoomMessage.bind(tutorChatMsgController))
 
 
 export default router;

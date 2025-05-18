@@ -4,7 +4,7 @@ import { CustomError } from "../../domain/errors/customError.js";
 import { IChatData, IChatMsgService, IChatRepository, IConversation, IMessage } from "../../interface/IConversation.js";
 import { INotification, INotificationRepository } from "../../interface/INotification.js";
 import chatRepository from "../../repositories/chatRepository.js";
-import notificationRepository from "../../repositories/notificationRepository.js";
+import notificationRepository from "../../repositories/chatRepository.js";
 import dotenv from 'dotenv';
 import { IStudent } from "../../interface/IStudent.js";
 import { ITutor } from "../../interface/ITutor.js";
@@ -17,6 +17,9 @@ class SocketService implements IChatMsgService{
     constructor(chatRepository: IChatRepository, notificationRepository: INotificationRepository){
         this.chatRepository = chatRepository
         this.notificationRepository = notificationRepository
+    }
+    getRoomById(roomId: string, userId: string): Promise<IConversation | null> {
+        throw new Error("Method not implemented.");
     }
     getTutorChats(search: string, tutorId: string | undefined): Promise<IChatData[] | null> {
         throw new Error("Method not implemented.");

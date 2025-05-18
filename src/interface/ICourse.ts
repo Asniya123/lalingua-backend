@@ -2,12 +2,12 @@ import mongoose, { Types} from 'mongoose';
 import { Request, Response } from "express";
 import { ICategory } from './ICategory.js';
 import { ILesson } from './ILesson.js';
-import { IEnrollment } from './IStudent.js';
+import { IEnrolledCourse, IEnrollment } from './IStudent.js';
 import { ITutor } from './ITutor.js';
 
 
 export interface ICourse{
-  _id: string;
+  _id?: string;
   courseTitle: string;
   imageUrl: string;
   category: string | Types.ObjectId
@@ -111,7 +111,7 @@ export interface ICourseRepository {
         razorpay_signature?: string;
       }
     ): Promise<void> 
-    getEnrolledCourses(userId: string): Promise<ICourse[]> 
+    getEnrolledCourses(userId: string): Promise<IEnrolledCourse[]> 
     listLessons(courseId: string): Promise<{ success: boolean; message: string; lessons: ILesson[] }>
     cancelEnrollment(userId: string, courseId: string): Promise<{ success: boolean; refundAmount: number; message: string }> 
   }

@@ -30,8 +30,6 @@ class AdminService implements IAdminService {
       throw new Error("Admin not found");
     }
 
-    console.log("Admin password hash from DB:", admin.password); 
-
     const isPasswordValid = password === admin.password
    
 

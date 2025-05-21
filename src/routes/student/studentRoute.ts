@@ -8,8 +8,7 @@ import tutorService from "../../service/Student/tutorService.js";
 import TutorController from "../../controllers/Student/tutorController.js";
 import WalletController from "../../controllers/Student/walletController.js";
 import walletService from "../../service/Student/walletService.js";
-import ChatMsgController from "../../controllers/Socket/chatMsgController.js";
-import chatMessage from "../../service/useCase/chatMessage.js";
+
 
 
 
@@ -63,15 +62,6 @@ router.post('/wallet/check-balance', authenticate, walletController.checkBalance
 //Purchase
 // const purchaseController = new PurchaseController(purchaseService)
 // router.get('/purchaseHistory/:userId', authenticate, purchaseController.getPurchaseHistory.bind(purchaseController))
-
-//Chat
-
-const chatController = new ChatMsgController(chatMessage)
-
-router.get('/chat/contacts/:userId', authenticate, chatController.getContacts.bind(chatController))
-router.get('/chat/chats/:userId', authenticate, chatController.getChats.bind(chatController))
-router.get('/chat/room/:receiverId/:senderId', authenticate, chatController.getRoom.bind(chatController))
-router.get('/chat/room-message/:roomId/:userId', authenticate, chatController.getRoomMessage.bind(chatController))
 
 
 export default router

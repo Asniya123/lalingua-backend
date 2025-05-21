@@ -22,8 +22,6 @@ export interface ITutor extends Document {
     is_blocked: boolean;
     profilePicture?: string
     status: 'pending' | 'approved' | 'rejected'
-  
-    
 }
 
 export interface ILogin{

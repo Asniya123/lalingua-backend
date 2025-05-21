@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors, { CorsOptions } from 'cors';
 import mongoConnect from './config/db.js'
 import studentRoute from './routes/student/studentRoute.js'
+import chatRoute from './routes/student/chatRoute.js'
 import tutorRoutes from './routes/tutor/tutorRoute.js';
 import adminRoutes from './routes/admin/adminRoute.js';
 import { createServer } from 'http';
@@ -31,7 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 
 mongoConnect();
 
-app.use('/api/user', studentRoute);
+app.use('/api/user', studentRoute,chatRoute);
 app.use('/api/tutor', tutorRoutes);
 app.use('/api/admin', adminRoutes);
 

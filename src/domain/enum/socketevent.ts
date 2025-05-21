@@ -22,6 +22,7 @@ enum SocketEvent {
     NewBadge = "new-badge",
     ToTheTutor = "ToTheTutor",
     ToTutor = "ToTutor",
+    Error = "Error",
   }
   
   export default SocketEvent;

@@ -4,11 +4,11 @@ import { IMessage } from "../interface/IConversation.js";
 const MessageSchema = new Schema<IMessage>({
   chatId: {
     type: Schema.Types.ObjectId,
-    ref: 'Conversation', 
+    ref: "Conversation",
     required: true,
   },
   senderId: {
-    type: String,
+    type: Schema.Types.ObjectId, 
     required: true,
   },
   message: {
@@ -25,7 +25,7 @@ const MessageSchema = new Schema<IMessage>({
   },
   message_time: {
     type: Date,
-    default: Date.now, 
+    default: Date.now,
   },
 }, { timestamps: true });
 

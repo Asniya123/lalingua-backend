@@ -1,25 +1,26 @@
-import mongoose, { model, Schema } from "mongoose"; 
+import mongoose, { model, Schema } from "mongoose";
 import { IConversation } from "../interface/IConversation.js";
-
 
 const ChatSchema = new Schema<IConversation>({
   participants: [{
     type: Schema.Types.ObjectId,
-    refPath: 'participantsRef',
+    refPath: "participantsRef",
     required: true,
   }],
   participantsRef: [{
     type: String,
-    enum: ['Student', 'Tutor'],
+    enum: ["Student", "Tutor"],
     required: true,
-  }], 
+  }],
   messages: [{
     type: Schema.Types.ObjectId,
-    ref: 'Message',
+    ref: "Message",
+    default: [],
   }],
   lastMessage: {
     type: Schema.Types.ObjectId,
-    ref: 'Message',
+    ref: "Message",
+    default: null,
   },
   name: {
     type: String,
@@ -31,21 +32,27 @@ const ChatSchema = new Schema<IConversation>({
   },
 }, { timestamps: true });
 
-
-ChatSchema.pre('validate', function (next) {
+// Validate participants and participantsRef length
+ChatSchema.pre("validate", function (next) {
   if (this.participants.length !== this.participantsRef.length) {
-    return next(new Error('Participants and participantsRef must have the same length'));
+    return next(new Error("Participants and participantsRef must have the same length"));
   }
   next();
 });
 
-ChatSchema.path('participants').validate({
+// Validate that participants contains valid ObjectIds
+ChatSchema.path("participants").validate({
+  validator: (arr: mongoose.Types.ObjectId[]) => arr.every(id => mongoose.Types.ObjectId.isValid(id)),
+  message: "All participants must be valid ObjectIds",
+});
+
+// Validate non-empty arrays
+ChatSchema.path("participants").validate({
   validator: (arr: mongoose.Types.ObjectId[]) => arr.length > 0,
   message: "Participants array must not be empty",
 });
 
-
-ChatSchema.path('participantsRef').validate({
+ChatSchema.path("participantsRef").validate({
   validator: (arr: string[]) => arr.length > 0,
   message: "participantsRef array must not be empty",
 });

@@ -1,22 +1,19 @@
 import {
-  IChatMsgService,
   ISocketController,
+  ISocketService,
 } from "../../interface/IConversation.js";
-import { DefaultEventsMap, Socket, Server as SocketIOServer } from "socket.io";
+import { Socket, Server as SocketIOServer } from "socket.io";
 import SocketEvent from "../../domain/enum/socketevent.js";
 // import { INotification } from "../../interface/INotification.js";
 
 export default class SocketController implements ISocketController {
-  private chatService: IChatMsgService;
+  private chatService: ISocketService;
   private _io: SocketIOServer;
   private _userSocketMap: Map<string, string>;
   private _tutorSocketMap: Map<string, string>;
   private _adminSocketMap: Map<string, string>;
 
-  constructor(
-    chatService: IChatMsgService,
-    io: SocketIOServer<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
-  ) {
+  constructor(chatService: ISocketService, io: SocketIOServer) {
     this.chatService = chatService;
     this._io = io;
     this._userSocketMap = new Map();
@@ -29,7 +26,6 @@ export default class SocketController implements ISocketController {
     const userId = socket.handshake.query.userId as string;
     const role = socket.handshake.query.role as string;
 
-    
     switch (role) {
       case "user":
         this._userSocketMap.set(userId, socket.id);
@@ -54,6 +50,7 @@ export default class SocketController implements ISocketController {
     );
 
     socket.on(SocketEvent.JoinedRoom, async (roomId) => {
+      console.log(`Client joined room: ${roomId}`);
       socket.join(roomId);
     });
 
@@ -66,7 +63,6 @@ export default class SocketController implements ISocketController {
         message_time,
         message_type,
       } = data;
-
       // Validate inputs
       if (!roomId || !recieverId || !senderId || !message || !message_time) {
         console.error("Invalid message data:", data);
@@ -87,7 +83,8 @@ export default class SocketController implements ISocketController {
         }
 
         // Handle recieverId as a string
-        const toSocketId = recieverId !== senderId ? this._userSocketMap.get(recieverId) : null;
+        const toSocketId =
+          recieverId !== senderId ? this._userSocketMap.get(recieverId) : null;
         if (toSocketId) {
           this._io.to(toSocketId).emit(SocketEvent.NewBadge, savedMessage);
         }

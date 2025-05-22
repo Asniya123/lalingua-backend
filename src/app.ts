@@ -5,6 +5,7 @@ import mongoConnect from './config/db.js'
 import studentRoute from './routes/student/studentRoute.js'
 import chatRoute from './routes/student/chatRoute.js'
 import tutorRoutes from './routes/tutor/tutorRoute.js';
+import tutorChatRoute from './routes/tutor/tutorChatRoute.js'
 import adminRoutes from './routes/admin/adminRoute.js';
 import { createServer } from 'http';
 import { Server as SocketIOServer  } from 'socket.io';
@@ -33,7 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 mongoConnect();
 
 app.use('/api/user', studentRoute,chatRoute);
-app.use('/api/tutor', tutorRoutes);
+app.use('/api/tutor', tutorRoutes, tutorChatRoute);
 app.use('/api/admin', adminRoutes);
 
 

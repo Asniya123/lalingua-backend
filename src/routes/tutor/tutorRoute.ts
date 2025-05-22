@@ -6,8 +6,6 @@ import CourseController from "../../controllers/Tutor/courseController.js";
 import courseService from "../../service/Tutor/courseService.js";
 import LessonController from "../../controllers/Tutor/lessonController.js";
 import lessonService from "../../service/Tutor/lessonService.js";
-// import TutorChatMsgController from "../../controllers/Socket/tutorChatMsgController.js";
-// import chatMessage from "../../service/useCase/chatMessage.js";
 
 
 const router = Router();
@@ -15,7 +13,7 @@ const router = Router();
 const tutorController = new Tutorcontroller(tutorService);
 const courseController = new CourseController(courseService)
 const lessonController = new LessonController(lessonService)
-// const tutorChatMsgController = new TutorChatMsgController(chatMessage)
+
 
 
 router.post("/register", tutorController.registerTutor.bind(tutorController));
@@ -50,10 +48,7 @@ router.delete("/deleteLesson/:lessonId", lessonController.deleteLesson.bind(less
 
 
 
-//Chat
-// router.get('/chat/chats/:tutorId', tutorAuthenticate, tutorChatMsgController.getChats.bind(tutorChatMsgController))
-// router.get('/chat/room/:receiverId/:senderId', tutorAuthenticate, tutorChatMsgController.getRoom.bind(tutorChatMsgController))
-// router.get('/chat/room-message/:roomId/:tutorId', tutorAuthenticate, tutorChatMsgController.getRoomMessage.bind(tutorChatMsgController))
+
 
 
 export default router;

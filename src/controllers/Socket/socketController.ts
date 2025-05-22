@@ -63,7 +63,7 @@ export default class SocketController implements ISocketController {
         message_time,
         message_type,
       } = data;
-      // Validate inputs
+
       if (!roomId || !recieverId || !senderId || !message || !message_time) {
         console.error("Invalid message data:", data);
         return;
@@ -82,14 +82,14 @@ export default class SocketController implements ISocketController {
           return;
         }
 
-        // Handle recieverId as a string
+   
         const toSocketId =
           recieverId !== senderId ? this._userSocketMap.get(recieverId) : null;
         if (toSocketId) {
           this._io.to(toSocketId).emit(SocketEvent.NewBadge, savedMessage);
         }
 
-        // Emit message to room
+
         this._io
           .to(String(savedMessage.chatId))
           .emit(SocketEvent.NewMessage, savedMessage);

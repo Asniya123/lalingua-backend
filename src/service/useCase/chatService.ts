@@ -30,70 +30,76 @@ class ChatService implements IChatMsgService {
     this.tutorRepo = tutorRepo;
   }
 
-  async getRoom(receiverId: string, senderId: string): Promise<IConversation | null> {
-    try {
-      console.log(`Service: getRoom called with receiverId: ${receiverId}, senderId: ${senderId}`);
+  
+async getRoom(receiverId: string, senderId: string): Promise<IConversation | null> {
+  try {
+    console.log(`Service: getRoom called with receiverId: ${receiverId}, senderId: ${senderId}`);
 
-     
-      if (
-        !mongoose.Types.ObjectId.isValid(receiverId) ||
-        !mongoose.Types.ObjectId.isValid(senderId)
-      ) {
-        console.error("Invalid ObjectId:", { receiverId, senderId });
-        throw new CustomError(
-          `Invalid receiver or sender ID: receiverId=${receiverId}, senderId=${senderId}`,
-          HttpStatusCode.BAD_REQUEST
-        );
-      }
-
-    
-      console.log("Checking tutor and student existence...");
-      const tutor = await this.tutorRepo.findById(receiverId);
-      const student = await this.studentRepo.findById(senderId);
-      console.log("User lookup:", {
-        tutor: tutor ? tutor._id : null,
-        student: student ? student._id : null,
-      });
-
-      if (!tutor) {
-        console.error(`Tutor not found for receiverId: ${receiverId}`);
-        throw new CustomError(`Tutor not found: receiverId=${receiverId}`, HttpStatusCode.NOT_FOUND);
-      }
-      if (!student) {
-        console.error(`Student not found for senderId: ${senderId}`);
-        throw new CustomError(`Student not found: senderId=${senderId}`, HttpStatusCode.NOT_FOUND);
-      }
-
-      
-      let room = await this.chatRepository.getRoom(receiverId, senderId);
-      if (!room) {
-        console.log("No existing room found, creating new room:", { receiverId, senderId });
-        room = await this.chatRepository.createRoom(receiverId, senderId);
-      }
-
-      if (!room || !room._id) {
-        console.error("Failed to create or fetch room:", { receiverId, senderId });
-        throw new CustomError("Failed to create or fetch room", HttpStatusCode.INTERNAL_SERVER_ERROR);
-      }
-
-      console.log("Room fetched/created:", JSON.stringify(room, null, 2));
-      return room;
-    } catch (error: any) {
-      console.error("Service: Error in getRoom:", {
-        message: error.message,
-        receiverId,
-        senderId,
-        code: error.code,
-        stack: error.stack,
-      });
-      throw error instanceof CustomError
-        ? error
-        : new CustomError(
-            `Failed to fetch or create room: ${error.message}`,
-            HttpStatusCode.INTERNAL_SERVER_ERROR
-          );
+    if (
+      !mongoose.Types.ObjectId.isValid(receiverId) ||
+      !mongoose.Types.ObjectId.isValid(senderId)
+    ) {
+      console.error("Invalid ObjectId:", { receiverId, senderId });
+      throw new CustomError(
+        `Invalid receiver or sender ID: receiverId=${receiverId}, senderId=${senderId}`,
+        HttpStatusCode.BAD_REQUEST
+      );
     }
+
+  
+    const [receiverTutor, receiverStudent, senderTutor, senderStudent] = await Promise.all([
+      this.tutorRepo.findById(receiverId),
+      this.studentRepo.findById(receiverId),
+      this.tutorRepo.findById(senderId),
+      this.studentRepo.findById(senderId),
+    ]);
+
+    const receiver = receiverTutor || receiverStudent;
+    const sender = senderTutor || senderStudent;
+
+    if (!receiver) {
+      console.error(`Receiver not found for receiverId: ${receiverId}`);
+      throw new CustomError(`Receiver not found: receiverId=${receiverId}`, HttpStatusCode.NOT_FOUND);
+    }
+    if (!sender) {
+      console.error(`Sender not found for senderId: ${senderId}`);
+      throw new CustomError(`Sender not found: senderId=${senderId}`, HttpStatusCode.NOT_FOUND);
+    }
+
+    console.log("User lookup:", {
+      receiver: receiver ? { _id: receiver._id, type: receiverTutor ? 'Tutor' : 'Student' } : null,
+      sender: sender ? { _id: sender._id, type: senderTutor ? 'Tutor' : 'Student' } : null,
+    });
+
+    let room = await this.chatRepository.getRoom(receiverId, senderId);
+    if (!room) {
+      console.log("No existing room found, creating new room:", { receiverId, senderId });
+      room = await this.chatRepository.createRoom(receiverId, senderId);
+    }
+
+    if (!room || !room._id) {
+      console.error("Failed to create or fetch room:", { receiverId, senderId });
+      throw new CustomError("Failed to create or fetch room", HttpStatusCode.INTERNAL_SERVER_ERROR);
+    }
+
+    console.log("Room fetched/created:", JSON.stringify(room, null, 2));
+    return room;
+  } catch (error: any) {
+    console.error("Service: Error in getRoom:", {
+      message: error.message,
+      receiverId,
+      senderId,
+      code: error.code,
+      stack: error.stack,
+    });
+    throw error instanceof CustomError
+      ? error
+      : new CustomError(
+          `Failed to fetch or create room: ${error.message}`,
+          HttpStatusCode.INTERNAL_SERVER_ERROR
+        );
   }
+}
 
   async getRoomMessage(roomId: string, userId: string): Promise<IConversation | null> {
     try {
@@ -159,7 +165,7 @@ class ChatService implements IChatMsgService {
   try {
     console.log(`Service: Saving message for roomId: ${roomId}, senderId: ${senderId}`);
 
-    // Validate inputs
+    
     if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
       console.error("Invalid roomId or senderId:", { roomId, senderId });
       throw new CustomError("Invalid room or sender ID", HttpStatusCode.BAD_REQUEST);
@@ -169,14 +175,14 @@ class ChatService implements IChatMsgService {
       throw new CustomError("Message cannot be empty", HttpStatusCode.BAD_REQUEST);
     }
 
-    // Verify sender exists
+   
     const sender = (await this.tutorRepo.findById(senderId)) || (await this.studentRepo.findById(senderId));
     if (!sender) {
       console.error(`Sender not found: ${senderId}`);
       throw new CustomError(`Sender not found: ${senderId}`, HttpStatusCode.NOT_FOUND);
     }
 
-    // Verify room exists
+    
     const room = await this.chatRepository.getRoomById(roomId, senderId);
     if (!room) {
       console.error(`Room not found: ${roomId}`);

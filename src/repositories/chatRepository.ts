@@ -22,24 +22,23 @@ class ChatRepository implements IChatRepository {
   message_type: string
 ): Promise<IMessage | null> {
   try {
-    // Validate ObjectIds
+
     if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
       throw new CustomError("Invalid roomId or senderId", HttpStatusCode.BAD_REQUEST);
     }
 
-    // Validate message_type
+
     const allowedMessageTypes = ["text", "image", "video", "file"];
     if (!allowedMessageTypes.includes(message_type)) {
       throw new CustomError("Invalid message_type", HttpStatusCode.BAD_REQUEST);
     }
 
-    // Check if conversation exists
     const conversation = await chatModel.findById(roomId).lean();
     if (!conversation) {
       throw new CustomError("Chat room not found", HttpStatusCode.NOT_FOUND);
     }
 
-    // Check if senderId is a participant
+
     if (!conversation.participants.some((p: any) => p.toString() === senderId)) {
       throw new CustomError(
         "Sender is not a participant in this conversation",
@@ -49,7 +48,7 @@ class ChatRepository implements IChatRepository {
 
     console.log(`Repository: Saving message for roomId: ${roomId}, senderId: ${senderId}`);
 
-    // Create message
+ 
     const newMessage = await MessageModel.create({
       chatId: new mongoose.Types.ObjectId(roomId),
       senderId: new mongoose.Types.ObjectId(senderId),
@@ -59,7 +58,7 @@ class ChatRepository implements IChatRepository {
       isRead: false,
     });
 
-    // Update conversation
+
     const updatedChat = await chatModel.findByIdAndUpdate(
       roomId,
       {
@@ -176,14 +175,14 @@ class ChatRepository implements IChatRepository {
 
   async createRoom(receiverId: string, senderId: string): Promise<IConversation> {
     try {
-      // Validate ObjectIds
+ 
       if (!mongoose.Types.ObjectId.isValid(receiverId) || !mongoose.Types.ObjectId.isValid(senderId)) {
         throw new CustomError("Invalid receiverId or senderId", HttpStatusCode.BAD_REQUEST);
       }
 
       console.log(`Repository: Creating room for receiverId: ${receiverId}, senderId: ${senderId}`);
 
-      // Fetch participants
+    
       const [receiverTutor, receiverStudent, senderTutor, senderStudent] = await Promise.all([
         tutorRepo.findById(receiverId),
         studentRepo.findById(receiverId),
@@ -198,14 +197,14 @@ class ChatRepository implements IChatRepository {
         throw new CustomError("Participant not found", HttpStatusCode.NOT_FOUND);
       }
 
-      // Determine participant types
+  
       const receiverType = receiverTutor ? "Tutor" : "Student";
       const senderType = senderTutor ? "Tutor" : "Student";
 
-      // Create room name
+
       const roomName = `${receiver.name || "Unknown"} & ${sender.name || "Unknown"}`;
 
-      // Create conversation
+
       const room = await chatModel.create({
         participants: [
           new mongoose.Types.ObjectId(receiverId),
@@ -217,7 +216,7 @@ class ChatRepository implements IChatRepository {
         profilePicture: receiver.profilePicture || sender.profilePicture || null,
       });
 
-      // Populate participants
+
       await room.populate({
         path: "participants",
         select: "_id username email profilePicture name",
@@ -367,7 +366,7 @@ class ChatRepository implements IChatRepository {
           lastMessage: {
             $cond: {
               if: { $gt: [{ $size: "$lastMessageData" }, 0] },
-              then: { $arrayElemAt: ["$lastMessageData", 0] }, // Changed to return the entire message object
+              then: { $arrayElemAt: ["$lastMessageData", 0] }, 
               else: null,
             },
           },

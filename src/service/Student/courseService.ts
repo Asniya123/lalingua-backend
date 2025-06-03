@@ -9,8 +9,6 @@ import Razorpay from "razorpay";
 import dotenv from "dotenv";
 import { ILesson, ILessonRepository } from "../../interface/ILesson.js";
 import lessonRepository from "../../repositories/tutor/lessonRepository.js";
-import { CustomError } from "../../domain/errors/customError.js";
-import HttpStatusCode from "../../domain/enum/httpstatus.js";
 import { IWalletRepository } from "../../interface/IWallet.js";
 import walletRepository from "../../repositories/student/walletRepository.js";
 
@@ -254,76 +252,89 @@ export class CourseService implements ISCourseService {
   }
   }
 
-  async cancelEnrollment(userId: string, courseId: string): Promise<{ success: boolean; refundAmount: number; message: string }> {
+  async cancelEnrollment(
+    userId: string,
+    courseId: string
+  ): Promise<{ success: boolean; refundAmount: number; message: string }> {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(courseId)) {
+        console.error(`Invalid ObjectId: userId=${userId}, courseId=${courseId}`);
+        throw new Error("Invalid user or course ID");
+      }
 
-  
-    if (!isValidObjectId(userId) || !isValidObjectId(courseId)) {
-      console.error(`Invalid ObjectId: userId=${userId}, courseId=${courseId}`);
-      throw new CustomError("Invalid user or course ID", HttpStatusCode.BAD_REQUEST);
-    }
-  
-    const student = await this.studentRepository.findById(userId);
-    if (!student) {
-      console.error(`Student not found for userId: ${userId}`);
-      throw new CustomError("Student not found", HttpStatusCode.NOT_FOUND);
-    }
-  
-  
-    if (!student.enrollments || student.enrollments.length === 0) {
-      console.error(`No enrollments found for student: ${userId}`);
-      throw new CustomError("No enrollments found for this student", HttpStatusCode.NOT_FOUND);
-    }
-  
-    const enrollment = student.enrollments.find((e) => e.courseId.toString() === courseId);
-    if (!enrollment) {
-      console.error(`Enrollment not found for courseId: ${courseId}`);
-      throw new CustomError("Enrollment not found for this course", HttpStatusCode.NOT_FOUND);
-    }
-    
-  
-    const enrolledAt = new Date(enrollment.enrolledAt);
-    if (isNaN(enrolledAt.getTime())) {
-      console.error(`Invalid enrolledAt date for enrollment: ${courseId}`);
-      throw new CustomError("Invalid enrollment date", HttpStatusCode.BAD_REQUEST);
-    }
-  
-    const now = new Date();
-    const daysSinceEnrollment = (now.getTime() - enrolledAt.getTime()) / (1000 * 60 * 60 * 24);
+      const student = await this.studentRepository.findById(userId);
+      if (!student) {
+        console.error(`Student not found for userId: ${userId}`);
+        throw new Error("Student not found");
+      }
 
-    if (daysSinceEnrollment > 7) {
-      console.error(`Refund period expired for enrollment: ${courseId}`);
-      throw new CustomError("Refund period has expired (7 days)", HttpStatusCode.BAD_REQUEST);
-    }
-  
-    const refundAmount = enrollment.amount || 0;
+      if (!student.enrollments || student.enrollments.length === 0) {
+        console.error(`No enrollments found for student: ${userId}`);
+        throw new Error("No enrollments found for this student");
+      }
 
-    if (refundAmount <= 0) {
-      console.error(`Invalid refund amount for enrollment: ${courseId}`);
-      throw new CustomError("No payment amount found for this enrollment", HttpStatusCode.BAD_REQUEST);
-    }
-  
-    const reason = `Refund for canceling course ${courseId}`;
-   
-    const wallet = await this.walletRepository.refundWallet(enrollment.paymentId, userId, refundAmount, reason);
-    if (!wallet) {
-      console.error(`Wallet refund failed for userId: ${userId}`);
-      throw new CustomError("Failed to process refund to wallet", HttpStatusCode.INTERNAL_SERVER_ERROR);
-    }
+      const enrollment = student.enrollments.find((e) => e.courseId.toString() === courseId);
+      if (!enrollment) {
+        console.error(`Enrollment not found for courseId: ${courseId}`);
+        throw new Error("Enrollment not found for this course");
+      }
 
-    const updatedStudent = await this.studentRepository.update(userId, {
-      $pull: { enrollments: { courseId } },
-    });
-    if (!updatedStudent) {
-      console.error(`Failed to update student enrollments for userId: ${userId}`);
-      throw new CustomError("Failed to update enrollment status", HttpStatusCode.INTERNAL_SERVER_ERROR);
+      const enrolledAt = new Date(enrollment.enrolledAt);
+      if (isNaN(enrolledAt.getTime())) {
+        console.error(`Invalid enrolledAt date for enrollment: ${courseId}`);
+        throw new Error("Invalid enrollment date");
+      }
+
+      const now = new Date();
+      const daysSinceEnrollment = (now.getTime() - enrolledAt.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceEnrollment > 7) {
+        console.error(`Refund period expired for enrollment: ${courseId}`);
+        throw new Error("Refund period has expired (7 days)");
+      }
+
+      const refundAmount = enrollment.amount || 0;
+      if (refundAmount <= 0) {
+        console.error(`Invalid refund amount for enrollment: ${courseId}`);
+        throw new Error("No payment amount found for this enrollment");
+      }
+
+      const reason = `Refund for canceling course ${courseId}`;
+      const wallet = await this.walletRepository.refundWallet(
+        enrollment.paymentId,
+        userId,
+        refundAmount,
+        reason
+      );
+      if (!wallet) {
+        console.error(`Wallet refund failed for userId: ${userId}`);
+        throw new Error("Failed to process refund to wallet");
+      }
+
+      const updatedStudent = await this.studentRepository.update(userId, {
+        $pull: { enrollments: { courseId } },
+      });
+      if (!updatedStudent) {
+        console.error(`Failed to update student enrollments for userId: ${userId}`);
+        throw new Error("Failed to update enrollment status");
+      }
+
+      console.log(
+        `Course canceled successfully for userId: ${userId}, courseId: ${courseId}, refundAmount: ${refundAmount}`
+      );
+      return {
+        success: true,
+        refundAmount,
+        message: `Course canceled successfully. ₹${refundAmount} refunded to your wallet.`,
+      };
+    } catch (error: any) {
+      console.error("Service: Error in cancelEnrollment:", {
+        message: error.message,
+        userId,
+        courseId,
+        stack: error.stack,
+      });
+      throw new Error(`Failed to cancel enrollment: ${error.message}`);
     }
-  
-    
-    return {
-      success: true,
-      refundAmount,
-      message: `Course canceled successfully. ₹${refundAmount} refunded to your wallet.`,
-    };
   }
 
 

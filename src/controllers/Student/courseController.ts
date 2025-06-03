@@ -1,8 +1,6 @@
 import { Request, Response } from "express";
 import { ObjectId } from "mongodb"; 
 import { ISCourseController, ISCourseService,ICourse, ITutorDisplay } from "../../interface/ICourse.js";
-import { CustomError } from "../../domain/errors/customError.js";
-import HttpStatusCode from "../../domain/enum/httpstatus.js";
 import { IWalletService } from "../../interface/IWallet.js";
 import walletService from "../../service/Student/walletService.js";
 import { ILesson } from "../../interface/ILesson.js";
@@ -151,14 +149,11 @@ export default class CourseController implements ISCourseController {
     try {
       const { courseId, paymentId, orderId, signature, paymentMethod } = req.body;
       const userId = req.user?._id;
-  
+
       if (!userId || !courseId || !paymentMethod) {
-        throw new CustomError(
-          "User ID, course ID, and payment method are required",
-          HttpStatusCode.BAD_REQUEST
-        );
+        throw new Error("User ID, course ID, and payment method are required");
       }
-  
+
       let paymentDetails:
         | {
             paymentMethod: "razorpay";
@@ -170,15 +165,12 @@ export default class CourseController implements ISCourseController {
             paymentMethod: "wallet";
             walletTransactionId: string;
           };
-  
+
       if (paymentMethod === "razorpay") {
         if (!paymentId || !orderId || !signature) {
-          throw new CustomError(
-            "Razorpay payment details are required",
-            HttpStatusCode.BAD_REQUEST
-          );
+          throw new Error("Razorpay payment details are required");
         }
-  
+
         paymentDetails = {
           paymentMethod: "razorpay",
           razorpay_payment_id: paymentId,
@@ -188,21 +180,18 @@ export default class CourseController implements ISCourseController {
       } else if (paymentMethod === "wallet") {
         const course = await this.courseService.getCourseById(courseId);
         if (!course || typeof course?.regularPrice !== "number") {
-          throw new CustomError("Course not found", HttpStatusCode.NOT_FOUND);
+          throw new Error("Course not found");
         }
-  
+
         const walletResponse = await this.walletService.wallet_payment({
           userId,
           amount: course.regularPrice,
         });
-  
+
         if (!walletResponse.success || !walletResponse.wallet) {
-          throw new CustomError(
-            walletResponse.message || "Insufficient wallet balance",
-            HttpStatusCode.BAD_REQUEST
-          );
+          throw new Error(walletResponse.message || "Insufficient wallet balance");
         }
-  
+
         const walletTransactionId = `wallet_tx_${Date.now()}`;
         await this.walletService.debitWallet(
           walletTransactionId,
@@ -210,32 +199,37 @@ export default class CourseController implements ISCourseController {
           course.regularPrice,
           `Payment for course ${courseId}`
         );
-  
+
         paymentDetails = {
           paymentMethod: "wallet",
           walletTransactionId,
         };
       } else {
-        throw new CustomError(
-          "Invalid payment method",
-          HttpStatusCode.BAD_REQUEST
-        );
+        throw new Error("Invalid payment method");
       }
-  
-      
+
       await this.courseService.enrollCourse(userId, courseId, paymentDetails);
-  
+
       res.status(200).json({ success: true, message: "Enrollment successful" });
     } catch (error) {
-      console.error("Controller error enrolling course:", error);
-      const status =
-        error instanceof CustomError
-          ? error.statusCode
-          : HttpStatusCode.INTERNAL_SERVER_ERROR;
-      res.status(status).json({
+      console.error("Controller: Error enrolling course:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      const statusCode = error instanceof Error
+        ? error.message.includes("Invalid") || error.message.includes("required")
+          ? 400
+          : error.message.includes("not found")
+          ? 404
+          : error.message.includes("Insufficient")
+          ? 400
+          : 500
+        : 500;
+
+      res.status(statusCode).json({
         success: false,
-        message:
-          error instanceof Error ? error.message : "Failed to enroll course",
+        message: error instanceof Error ? error.message : "Failed to enroll course",
       });
     }
   }

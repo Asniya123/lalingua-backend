@@ -68,6 +68,7 @@ export interface IChatRepository {
     query: FilterQuery<IConversation>,
     tutorId: string
   ): Promise<IChatData[] | null>;
+  markMessagesAsRead(chatId: string, userId: string): Promise<void>;
   // saveAdminNotification(notification: INotification): Promise<INotification>;
   // saveNotification(notification: INotification): Promise<INotification>;
   // saveMessages(message: IMessage): Promise<void>;
@@ -105,7 +106,9 @@ export interface ISocketService {
     message_time: Date,
     message_type: string
   ): Promise<IMessage | null>;
+  markMessagesAsRead(chatId: string, userId: string): Promise<void>;
 }
+
 
 export interface IChatSummary {
   _id: string;

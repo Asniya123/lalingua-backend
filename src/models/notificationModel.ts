@@ -1,3 +1,4 @@
+
 import { model, Schema } from "mongoose";
 import { INotification } from "../interface/INotification.js";
 
@@ -38,10 +39,9 @@ const NotificationSchema = new Schema<INotification>(
     },
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
 );
 
-
-const NotificationModel = model<INotification>("Notificaion", NotificationSchema);
+const NotificationModel = model<INotification>("Notification", NotificationSchema); 
 export default NotificationModel;

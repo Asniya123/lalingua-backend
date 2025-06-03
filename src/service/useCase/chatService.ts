@@ -1,6 +1,4 @@
 import mongoose, { FilterQuery } from "mongoose";
-import HttpStatusCode from "../../domain/enum/httpstatus.js";
-import { CustomError } from "../../domain/errors/customError.js";
 import {
   IChatData,
   IChatMsgService,
@@ -30,100 +28,88 @@ class ChatService implements IChatMsgService {
     this.tutorRepo = tutorRepo;
   }
 
-  
-async getRoom(receiverId: string, senderId: string): Promise<IConversation | null> {
-  try {
-    console.log(`Service: getRoom called with receiverId: ${receiverId}, senderId: ${senderId}`);
+  async getRoom(receiverId: string, senderId: string): Promise<IConversation | null> {
+    try {
+      console.log(`Service: getRoom called with receiverId: ${receiverId}, senderId: ${senderId}`);
 
-    if (
-      !mongoose.Types.ObjectId.isValid(receiverId) ||
-      !mongoose.Types.ObjectId.isValid(senderId)
-    ) {
-      console.error("Invalid ObjectId:", { receiverId, senderId });
-      throw new CustomError(
-        `Invalid receiver or sender ID: receiverId=${receiverId}, senderId=${senderId}`,
-        HttpStatusCode.BAD_REQUEST
-      );
+      if (
+        !mongoose.Types.ObjectId.isValid(receiverId) ||
+        !mongoose.Types.ObjectId.isValid(senderId)
+      ) {
+        console.error("Invalid ObjectId:", { receiverId, senderId });
+        throw new Error(`Invalid receiver or sender ID: receiverId=${receiverId}, senderId=${senderId}`);
+      }
+
+      const [receiverTutor, receiverStudent, senderTutor, senderStudent] = await Promise.all([
+        this.tutorRepo.findById(receiverId),
+        this.studentRepo.findById(receiverId),
+        this.tutorRepo.findById(senderId),
+        this.studentRepo.findById(senderId),
+      ]);
+
+      const receiver = receiverTutor || receiverStudent;
+      const sender = senderTutor || senderStudent;
+
+      if (!receiver) {
+        console.error(`Receiver not found for receiverId: ${receiverId}`);
+        throw new Error(`Receiver not found: receiverId=${receiverId}`);
+      }
+      if (!sender) {
+        console.error(`Sender not found for senderId: ${senderId}`);
+        throw new Error(`Sender not found: senderId=${senderId}`);
+      }
+
+      console.log("User lookup:", {
+        receiver: receiver ? { _id: receiver._id, type: receiverTutor ? "Tutor" : "Student" } : null,
+        sender: sender ? { _id: sender._id, type: senderTutor ? "Tutor" : "Student" } : null,
+      });
+
+      let room = await this.chatRepository.getRoom(receiverId, senderId);
+      if (!room) {
+        console.log("No existing room found, creating new room:", { receiverId, senderId });
+        room = await this.chatRepository.createRoom(receiverId, senderId);
+      }
+
+      if (!room || !room._id) {
+        console.error("Failed to create or fetch room:", { receiverId, senderId });
+        throw new Error("Failed to create or fetch room");
+      }
+
+      console.log("Room fetched/created:", JSON.stringify(room, null, 2));
+      return room;
+    } catch (error: any) {
+      console.error("Service: Error in getRoom:", {
+        message: error.message,
+        receiverId,
+        senderId,
+        stack: error.stack,
+      });
+      throw new Error(`Failed to fetch or create room: ${error.message}`);
     }
-
-  
-    const [receiverTutor, receiverStudent, senderTutor, senderStudent] = await Promise.all([
-      this.tutorRepo.findById(receiverId),
-      this.studentRepo.findById(receiverId),
-      this.tutorRepo.findById(senderId),
-      this.studentRepo.findById(senderId),
-    ]);
-
-    const receiver = receiverTutor || receiverStudent;
-    const sender = senderTutor || senderStudent;
-
-    if (!receiver) {
-      console.error(`Receiver not found for receiverId: ${receiverId}`);
-      throw new CustomError(`Receiver not found: receiverId=${receiverId}`, HttpStatusCode.NOT_FOUND);
-    }
-    if (!sender) {
-      console.error(`Sender not found for senderId: ${senderId}`);
-      throw new CustomError(`Sender not found: senderId=${senderId}`, HttpStatusCode.NOT_FOUND);
-    }
-
-    console.log("User lookup:", {
-      receiver: receiver ? { _id: receiver._id, type: receiverTutor ? 'Tutor' : 'Student' } : null,
-      sender: sender ? { _id: sender._id, type: senderTutor ? 'Tutor' : 'Student' } : null,
-    });
-
-    let room = await this.chatRepository.getRoom(receiverId, senderId);
-    if (!room) {
-      console.log("No existing room found, creating new room:", { receiverId, senderId });
-      room = await this.chatRepository.createRoom(receiverId, senderId);
-    }
-
-    if (!room || !room._id) {
-      console.error("Failed to create or fetch room:", { receiverId, senderId });
-      throw new CustomError("Failed to create or fetch room", HttpStatusCode.INTERNAL_SERVER_ERROR);
-    }
-
-    console.log("Room fetched/created:", JSON.stringify(room, null, 2));
-    return room;
-  } catch (error: any) {
-    console.error("Service: Error in getRoom:", {
-      message: error.message,
-      receiverId,
-      senderId,
-      code: error.code,
-      stack: error.stack,
-    });
-    throw error instanceof CustomError
-      ? error
-      : new CustomError(
-          `Failed to fetch or create room: ${error.message}`,
-          HttpStatusCode.INTERNAL_SERVER_ERROR
-        );
   }
-}
 
   async getRoomMessage(roomId: string, userId: string): Promise<IConversation | null> {
     try {
       console.log(`Service: getRoomMessage called with roomId: ${roomId}, userId: ${userId}`);
       if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(userId)) {
         console.error("Invalid roomId or userId:", { roomId, userId });
-        throw new CustomError("Invalid room or user ID", HttpStatusCode.BAD_REQUEST);
+        throw new Error("Invalid room or user ID");
       }
 
       const room = await this.chatRepository.getRoomById(roomId, userId);
 
       if (!room) {
         console.error("Room not found:", { roomId, userId });
-        throw new CustomError("Room not found", HttpStatusCode.NOT_FOUND);
+        throw new Error("Room not found");
       }
 
-       
       const otherParticipant = room.participants.find(
         (p: any) => p._id.toString() !== userId
       );
 
       if (!otherParticipant) {
         console.error("No other participant found in room:", { roomId, userId });
-        throw new CustomError("No other participants found", HttpStatusCode.INTERNAL_SERVER_ERROR);
+        throw new Error("No other participants found");
       }
 
       const conversation: IConversation = {
@@ -143,89 +129,74 @@ async getRoom(receiverId: string, senderId: string): Promise<IConversation | nul
     } catch (error: any) {
       console.error(`Service: Error in getRoomMessage for roomId: ${roomId}, userId: ${userId}:`, {
         message: error.message,
-        code: error.code,
         stack: error.stack,
       });
-      throw error instanceof CustomError
-        ? error
-        : new CustomError(
-            `Failed to fetch room messages: ${error.message}`,
-            HttpStatusCode.INTERNAL_SERVER_ERROR
-          );
+      throw new Error(`Failed to fetch room messages: ${error.message}`);
     }
   }
 
   async saveMessage(
-  roomId: string,
-  senderId: string,
-  message: string,
-  message_time: Date,
-  message_type: string
-): Promise<IMessage | null> {
-  try {
-    console.log(`Service: Saving message for roomId: ${roomId}, senderId: ${senderId}`);
+    roomId: string,
+    senderId: string,
+    message: string,
+    message_time: Date,
+    message_type: string
+  ): Promise<IMessage | null> {
+    try {
+      console.log(`Service: Saving message for roomId: ${roomId}, senderId: ${senderId}`);
 
-    
-    if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
-      console.error("Invalid roomId or senderId:", { roomId, senderId });
-      throw new CustomError("Invalid room or sender ID", HttpStatusCode.BAD_REQUEST);
+      if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
+        console.error("Invalid roomId or senderId:", { roomId, senderId });
+        throw new Error("Invalid room or sender ID");
+      }
+      if (!message.trim()) {
+        console.error("Message is empty:", { roomId, senderId });
+        throw new Error("Message cannot be empty");
+      }
+
+      const sender = (await this.tutorRepo.findById(senderId)) || (await this.studentRepo.findById(senderId));
+      if (!sender) {
+        console.error(`Sender not found: ${senderId}`);
+        throw new Error(`Sender not found: ${senderId}`);
+      }
+
+      const room = await this.chatRepository.getRoomById(roomId, senderId);
+      if (!room) {
+        console.error(`Room not found: ${roomId}`);
+        throw new Error(`Room not found: ${roomId}`);
+      }
+
+      const savedMessage = await this.chatRepository.saveMessage(
+        roomId,
+        senderId,
+        message.trim(),
+        message_time,
+        message_type
+      );
+
+      if (!savedMessage) {
+        console.error("Message not saved:", { roomId, senderId, message });
+        throw new Error("Message not saved");
+      }
+
+      console.log("Message saved:", JSON.stringify(savedMessage, null, 2));
+      return savedMessage;
+    } catch (error: any) {
+      console.error("Service: Error in saveMessage:", {
+        message: error.message,
+        roomId,
+        senderId,
+        stack: error.stack,
+      });
+      throw new Error(`Failed to save message: ${error.message}`);
     }
-    if (!message.trim()) {
-      console.error("Message is empty:", { roomId, senderId });
-      throw new CustomError("Message cannot be empty", HttpStatusCode.BAD_REQUEST);
-    }
-
-   
-    const sender = (await this.tutorRepo.findById(senderId)) || (await this.studentRepo.findById(senderId));
-    if (!sender) {
-      console.error(`Sender not found: ${senderId}`);
-      throw new CustomError(`Sender not found: ${senderId}`, HttpStatusCode.NOT_FOUND);
-    }
-
-    
-    const room = await this.chatRepository.getRoomById(roomId, senderId);
-    if (!room) {
-      console.error(`Room not found: ${roomId}`);
-      throw new CustomError(`Room not found: ${roomId}`, HttpStatusCode.NOT_FOUND);
-    }
-
-    const savedMessage = await this.chatRepository.saveMessage(
-      roomId,
-      senderId,
-      message.trim(),
-      message_time,
-      message_type
-    );
-
-    if (!savedMessage) {
-      console.error("Message not saved:", { roomId, senderId, message });
-      throw new CustomError("Message not saved", HttpStatusCode.INTERNAL_SERVER_ERROR);
-    }
-
-    console.log("Message saved:", JSON.stringify(savedMessage, null, 2));
-    return savedMessage;
-  } catch (error: any) {
-    console.error("Service: Error in saveMessage:", {
-      message: error.message,
-      roomId,
-      senderId,
-      code: error.code,
-      stack: error.stack,
-    });
-    throw error instanceof CustomError
-      ? error
-      : new CustomError(
-          `Failed to save message: ${error.message}`,
-          HttpStatusCode.INTERNAL_SERVER_ERROR
-        );
   }
-}
 
   async getContacts(search: string, userId: string | undefined): Promise<(IStudent | ITutor)[]> {
     try {
       if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
         console.error("Invalid or missing user ID:", userId);
-        throw new CustomError("Valid user ID is required", HttpStatusCode.BAD_REQUEST);
+        throw new Error("Valid user ID is required");
       }
 
       const query = search
@@ -238,7 +209,7 @@ async getRoom(receiverId: string, senderId: string): Promise<IConversation | nul
       const users = [...(students || []), ...(tutors || [])];
       if (!users.length) {
         console.warn("No users found for search:", { search, userId });
-        return []; 
+        return [];
       }
       console.log("Contacts fetched:", JSON.stringify(users, null, 2));
       return users;
@@ -247,15 +218,9 @@ async getRoom(receiverId: string, senderId: string): Promise<IConversation | nul
         message: error.message,
         userId,
         search,
-        code: error.code,
         stack: error.stack,
       });
-      throw error instanceof CustomError
-        ? error
-        : new CustomError(
-            `Failed to fetch contacts: ${error.message}`,
-            HttpStatusCode.INTERNAL_SERVER_ERROR
-          );
+      throw new Error(`Failed to fetch contacts: ${error.message}`);
     }
   }
 
@@ -263,14 +228,12 @@ async getRoom(receiverId: string, senderId: string): Promise<IConversation | nul
     try {
       if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
         console.error("Invalid or missing user ID:", userId);
-        throw new CustomError("Valid user ID is required", HttpStatusCode.BAD_REQUEST);
+        throw new Error("Valid user ID is required");
       }
 
-      
       const query: FilterQuery<IConversation> = {};
       if (search) {
-        
-        query.name = { $regex: search, $options: "i" }; 
+        query.name = { $regex: search, $options: "i" };
       }
 
       const chats = await this.chatRepository.getChats(query, userId);
@@ -281,15 +244,9 @@ async getRoom(receiverId: string, senderId: string): Promise<IConversation | nul
         message: error.message,
         userId,
         search,
-        code: error.code,
         stack: error.stack,
       });
-      throw error instanceof CustomError
-        ? error
-        : new CustomError(
-            `Failed to fetch chats: ${error.message}`,
-            HttpStatusCode.INTERNAL_SERVER_ERROR
-          );
+      throw new Error(`Failed to fetch chats: ${error.message}`);
     }
   }
 
@@ -297,13 +254,12 @@ async getRoom(receiverId: string, senderId: string): Promise<IConversation | nul
     try {
       if (!tutorId || !mongoose.Types.ObjectId.isValid(tutorId)) {
         console.error("Invalid or missing tutor ID:", tutorId);
-        throw new CustomError("Valid tutor ID is required", HttpStatusCode.BAD_REQUEST);
+        throw new Error("Valid tutor ID is required");
       }
 
-     
       const query: FilterQuery<IConversation> = {};
       if (search) {
-        query.name = { $regex: search, $options: "i" }; 
+        query.name = { $regex: search, $options: "i" };
       }
 
       const chats = await this.chatRepository.getTutorChats(query, tutorId);
@@ -318,17 +274,42 @@ async getRoom(receiverId: string, senderId: string): Promise<IConversation | nul
         message: error.message,
         tutorId,
         search,
-        code: error.code,
         stack: error.stack,
       });
-      throw error instanceof CustomError
-        ? error
-        : new CustomError(
-            `Failed to fetch tutor chats: ${error.message}`,
-            HttpStatusCode.INTERNAL_SERVER_ERROR
-          );
+      throw new Error(`Failed to fetch tutor chats: ${error.message}`);
     }
   }
+
+  async markMessagesAsRead(chatId: string, userId: string): Promise<void> {
+  try {
+    console.log(`Service: markMessagesAsRead called with chatId: ${chatId}, userId: ${userId}`);
+
+    if (!mongoose.Types.ObjectId.isValid(chatId) || !mongoose.Types.ObjectId.isValid(userId)) {
+      console.error("Invalid chatId or userId:", { chatId, userId });
+      throw new Error("Invalid chat or user ID");
+    }
+
+   
+    const room = await this.chatRepository.getRoomById(chatId, userId);
+    if (!room) {
+      console.error(`Room not found or user not authorized: ${chatId}`);
+      throw new Error(`Room not found or user not authorized: ${chatId}`);
+    }
+
+   
+    await this.chatRepository.markMessagesAsRead(chatId, userId);
+
+    console.log(`Messages marked as read for chatId: ${chatId}, userId: ${userId}`);
+  } catch (error: any) {
+    console.error("Service: Error in markMessagesAsRead:", {
+      message: error.message,
+      chatId,
+      userId,
+      stack: error.stack,
+    });
+    throw new Error(`Failed to mark messages as read: ${error.message}`);
+  }
+}
 }
 
 export default new ChatService(chatRepository, studentRepo, tutorRepo);

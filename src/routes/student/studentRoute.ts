@@ -8,6 +8,8 @@ import tutorService from "../../service/Student/tutorService.js";
 import TutorController from "../../controllers/Student/tutorController.js";
 import WalletController from "../../controllers/Student/walletController.js";
 import walletService from "../../service/Student/walletService.js";
+import NotificationController from "../../controllers/Socket/notificationController.js";
+import notificationService from "../../service/UseCase/notificationService.js";
 
 
 
@@ -59,9 +61,10 @@ const walletController = new WalletController(walletService)
 router.get('/wallet/:userId', authenticate, walletController.getAllWallet.bind(walletController))
 router.post('/wallet/check-balance', authenticate, walletController.checkBalance.bind(walletController))
 
-//Purchase
-// const purchaseController = new PurchaseController(purchaseService)
-// router.get('/purchaseHistory/:userId', authenticate, purchaseController.getPurchaseHistory.bind(purchaseController))
+//Notification
+const notificationController = new NotificationController(notificationService)
+
+router.get("/user/:userId", authenticate, notificationController.getUserNotifications.bind(notificationController));
 
 
 export default router

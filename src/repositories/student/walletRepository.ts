@@ -1,8 +1,7 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { IWallet, IWalletRepository } from "../../interface/IWallet.js";
 import WalletModel from "../../models/walletModel.js";
-import { CustomError } from "../../domain/errors/customError.js";
-import HttpStatusCode from "../../domain/enum/httpstatus.js";
+
 
 
 interface Transaction {
@@ -14,59 +13,89 @@ interface Transaction {
 }
 
 class walletReposiotry implements IWalletRepository{
-  async createWallet(userId: string): Promise<void> {
+ async createWallet(userId: string): Promise<void> {
     try {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        console.error(`Invalid userId: ${userId}`);
+        throw new Error("Invalid user ID");
+      }
+
+      console.log(`Repository: Creating wallet for userId: ${userId}`);
       const newWallet = await WalletModel.create({
         wallet_user: userId,
         walletBalance: 0,
         transaction: [],
       });
+
       if (!newWallet) {
+        console.error(`Failed to create wallet for userId: ${userId}`);
         throw new Error("Failed to create wallet");
       }
+
+      console.log(`Wallet created successfully for userId: ${userId}`);
     } catch (error) {
-      console.error("Error creating wallet:", error);
-      throw new CustomError("Failed to create wallet", HttpStatusCode.INTERNAL_SERVER_ERROR);
+      console.error("Repository: Error creating wallet:", {
+        message: error instanceof Error ? error.message : String(error),
+        userId,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error(`Failed to create wallet: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   async getWallet(userId: string): Promise<IWallet | null> {
     try {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        console.error(`Invalid userId: ${userId}`);
+        throw new Error("Invalid user ID");
+      }
+
+      console.log(`Repository: Fetching wallet for userId: ${userId}`);
       const wallet: IWallet | null = await WalletModel.findOne({
         wallet_user: userId,
       });
+
+      console.log(`Wallet fetched: ${wallet ? JSON.stringify(wallet, null, 2) : "null"}`);
       return wallet;
     } catch (error) {
-      console.error("Error fetching wallet:", error);
-      throw new CustomError("Failed to fetch wallet", HttpStatusCode.INTERNAL_SERVER_ERROR);
+      console.error("Repository: Error fetching wallet:", {
+        message: error instanceof Error ? error.message : String(error),
+        userId,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error(`Failed to fetch wallet: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   async refundWallet(enrolledId: string, userId: string, amount: number, reason: string): Promise<IWallet | null> {
     try {
-      if (!enrolledId || !userId || !amount || !reason) {
-        throw new CustomError('Missing required fields', HttpStatusCode.BAD_REQUEST);
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        console.error(`Invalid userId: ${userId}`);
+        throw new Error("Invalid user ID");
       }
-      if (typeof enrolledId !== 'string' || enrolledId.trim() === '') {
-        throw new CustomError('Invalid enrollment ID', HttpStatusCode.BAD_REQUEST);
+      if (!mongoose.Types.ObjectId.isValid(enrolledId)) {
+        console.error(`Invalid enrolledId: ${enrolledId}`);
+        throw new Error("Invalid enrollment ID");
       }
-  
-      const validatedAmount = Number(amount);
-      if (isNaN(validatedAmount) || validatedAmount <= 0) {
-        throw new CustomError('Invalid refund amount', HttpStatusCode.BAD_REQUEST);
+      if (typeof amount !== "number" || amount <= 0) {
+        console.error(`Invalid amount: ${amount}`);
+        throw new Error("Invalid refund amount");
       }
-      const amountInRupees = validatedAmount; 
-  
+      if (!reason || typeof reason !== "string" || reason.trim() === "") {
+        console.error(`Invalid reason: ${reason}`);
+        throw new Error("Valid reason is required");
+      }
+
+      const amountInRupees = amount;
       const newTransaction = {
         enrolledId: enrolledId.trim(),
         date: new Date(),
         amount: amountInRupees,
-        transactionType: 'credit',
-        reason: reason.trim() || 'No reason provided',
+        transactionType: "credit" as const,
+        reason: reason.trim(),
       };
-  
-      
-  
+
+      console.log(`Repository: Refunding wallet for userId: ${userId}, amount: ${amountInRupees}, reason: ${reason}`);
       const updatedWallet = await WalletModel.findOneAndUpdate(
         { wallet_user: userId },
         {
@@ -75,15 +104,24 @@ class walletReposiotry implements IWalletRepository{
         },
         { new: true }
       );
-  
+
       if (!updatedWallet) {
-        throw new CustomError('Wallet not found for the given user', HttpStatusCode.NOT_FOUND);
+        console.error(`Wallet not found for userId: ${userId}`);
+        throw new Error("Wallet not found");
       }
-  
-      return updatedWallet as unknown as IWallet;
+
+      console.log(`Wallet refunded successfully: ${JSON.stringify(updatedWallet, null, 2)}`);
+      return updatedWallet;
     } catch (error) {
-      console.error('Failed to refund wallet:', error);
-      throw error;
+      console.error("Repository: Error refunding wallet:", {
+        message: error instanceof Error ? error.message : String(error),
+        userId,
+        enrolledId,
+        amount,
+        reason,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error(`Failed to refund wallet: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

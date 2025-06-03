@@ -1,6 +1,4 @@
-import { FilterQuery } from "mongoose";
-import HttpStatusCode from "../../domain/enum/httpstatus.js";
-import { CustomError } from "../../domain/errors/customError.js";
+import mongoose, { FilterQuery } from "mongoose";
 import { ITutor, ITutorRepository, IEnrolledStudent, IEnrollmentStudRepository } from "../../interface/ITutor.js";
 import tutorModel from "../../models/tutorModel.js";
 import CourseModel from "../../models/courseModel.js";
@@ -150,29 +148,45 @@ class TutorRepository implements ITutorRepository{
         return tutor
     }
 
-    async  getContact(query: FilterQuery<ITutor>, tutorId: string | undefined): Promise<ITutor[] | null> {
-            try {
-                const completedQuery = {
-                    ...query,
-                    is_blocked: false,
-                    _id: { $ne: tutorId },
-                }
-    
-                const users: ITutor[] | null = await tutorModel.find(completedQuery, {
-                    _id: 1,
-                    username: 1,
-                    email: 1,
-                    profilePicture: 1
-                })
-    
-                if(!users){
-                    throw new CustomError('No users found', HttpStatusCode.NOT_FOUND)
-                }
-                return users
-            } catch (error) {
-                throw error
-            }
+  async getContact(query: FilterQuery<ITutor>, tutorId: string): Promise<ITutor[]> {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(tutorId)) {
+        console.error(`Invalid tutorId: ${tutorId}`);
+        throw new Error("Invalid tutor ID");
+      }
+      if (!query || typeof query !== "object") {
+        console.error(`Invalid query: ${JSON.stringify(query)}`);
+        throw new Error("Invalid query parameters");
+      }
+
+      const completedQuery: FilterQuery<ITutor> = {
+        ...query,
+        is_blocked: false,
+        _id: { $ne: tutorId },
+      };
+
+      console.log(`Repository: Fetching contacts for tutorId: ${tutorId}, query: ${JSON.stringify(completedQuery)}`);
+      const users: ITutor[] = await tutorModel
+        .find(completedQuery, {
+          _id: 1,
+          username: 1,
+          email: 1,
+          profilePicture: 1,
+        })
+        .lean();
+
+      console.log(`Contacts fetched: ${users.length} users`);
+      return users;
+    } catch (error) {
+      console.error("Repository: Error fetching contacts:", {
+        message: error instanceof Error ? error.message : String(error),
+        tutorId,
+        query: JSON.stringify(query),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error(`Failed to fetch contacts: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
 
 
     async getEnrolledStudentsByTutor(tutorId: string): Promise<IEnrolledStudent[]> {

@@ -1,9 +1,8 @@
 
-import { FilterQuery } from "mongoose"
+import mongoose, { FilterQuery } from "mongoose"
 import { IEnrollment, IStudent, IStudentRepository } from "../../interface/IStudent.js"
 import studentModel from "../../models/studentModel.js"
-import { CustomError } from "../../domain/errors/customError.js"
-import HttpStatusCode from "../../domain/enum/httpstatus.js"
+
 
 
 class StudentRepository implements IStudentRepository{
@@ -141,42 +140,64 @@ class StudentRepository implements IStudentRepository{
     }
 
 
-    async  getContact(query: FilterQuery<IStudent>, userId: string | undefined): Promise<IStudent[] | null> {
-        try {
-            const completedQuery = {
-                ...query,
-                is_blocked: false,
-                _id: { $ne: userId },
-            }
-
-            const users: IStudent[] | null = await studentModel.find(completedQuery, {
-                _id: 1,
-                username: 1,
-                email: 1,
-                profilePicture: 1
-            })
-
-            if(!users){
-                throw new CustomError('No users found', HttpStatusCode.NOT_FOUND)
-            }
-            return users
-        } catch (error) {
-            throw error
-        }
+    async getContact(query: FilterQuery<IStudent>, userId: string | undefined): Promise<IStudent[] | null> {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      console.error("Invalid or missing user ID:", userId);
+      throw new Error("Valid user ID is required");
     }
 
-    async update(studentId: string, data: Partial<IStudent> | { $pull: any }): Promise<IStudent | null> {
-        try {
-          return await studentModel.findByIdAndUpdate(
-            studentId,
-            data,
-            { new: true, runValidators: true }
-          ).exec();
-        } catch (error) {
-          console.error(`Error updating student ${studentId}:`, error);
-          throw new CustomError("Failed to update student", HttpStatusCode.INTERNAL_SERVER_ERROR);
-        }
+    const completedQuery = {
+      ...query,
+      is_blocked: false,
+      _id: { $ne: userId },
+    };
+
+    console.log(`Repository: Fetching contacts for userId: ${userId}, query:`, completedQuery);
+    const users: IStudent[] | null = await studentModel.find(completedQuery, {
+      _id: 1,
+      username: 1,
+      email: 1,
+      profilePicture: 1,
+    }).exec();
+
+    if (!users || users.length === 0) {
+      console.warn("No users found for query:", completedQuery);
+      return null;
+    }
+
+    console.log("Contacts fetched:", JSON.stringify(users, null, 2));
+    return users;
+  }
+
+  async update(studentId: string, data: Partial<IStudent> | { $pull: any }): Promise<IStudent | null> {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        console.error("Invalid studentId:", studentId);
+        throw new Error("Invalid student ID");
       }
+
+      console.log(`Repository: Updating student with ID: ${studentId}, data:`, data);
+      const updatedStudent = await studentModel
+        .findByIdAndUpdate(studentId, data, { new: true, runValidators: true })
+        .exec();
+
+      if (!updatedStudent) {
+        console.error(`Student not found: ${studentId}`);
+        throw new Error(`Student not found: ${studentId}`);
+      }
+
+      console.log("Student updated:", JSON.stringify(updatedStudent, null, 2));
+      return updatedStudent;
+    } catch (error: any) {
+      console.error(`Repository: Error updating student ${studentId}:`, {
+        message: error.message,
+        studentId,
+        data,
+        stack: error.stack,
+      });
+      throw new Error(`Failed to update student: ${error.message}`);
+    }
+  }
 }
 
 export default new StudentRepository()

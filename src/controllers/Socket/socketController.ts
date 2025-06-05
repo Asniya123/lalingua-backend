@@ -304,44 +304,78 @@ export default class SocketController implements ISocketController {
       }
     });
 
-    socket.on(SocketEvent.RejectCall, async (data: { to: string; sender: string; name?: string }) => {
-      console.log("Received reject-call:", JSON.stringify(data, null, 2));
-      const { to, sender, name } = data;
+    // Fixed reject-call handler in socketController.ts
 
-      if (!to || !sender) {
-        console.error(
-          `Invalid reject call data. Missing: ${!to ? "to" : ""} ${!sender ? "sender" : ""}`,
-          { data, userId, socketId: socket.id }
-        );
-        socket.emit("error", { message: "Invalid call data" });
-        return;
-      }
+socket.on(SocketEvent.RejectCall, async (data: { to: string; sender: string; name?: string; from?: string }) => {
+  console.log("Received reject-call:", JSON.stringify(data, null, 2));
+  const { to, sender, name, from } = data;
 
-      try {
-        const targetSocketMap = sender === "student" ? this._tutorSocketMap : this._userSocketMap;
-        const targetSocketId = targetSocketMap.get(to);
+  if (!to || !sender) {
+    console.error(
+      `Invalid reject call data. Missing: ${!to ? "to" : ""} ${!sender ? "sender" : ""}`,
+      { data, userId, socketId: socket.id }
+    );
+    socket.emit("error", { message: "Invalid call data" });
+    return;
+  }
 
-        if (!targetSocketId) {
-          console.warn(`Target ${to} is not online for reject call`, { userId: to });
-          return;
-        }
+  try {
+    // Determine the correct socket map based on sender
+    let targetSocketId: string | undefined;
+    
+    if (sender === "student" || sender === "user") {
+      // Student/user is rejecting, send to tutor
+      targetSocketId = this._tutorSocketMap.get(to);
+      console.log(`Student rejected call, notifying tutor ${to}`);
+    } else if (sender === "tutor") {
+      // Tutor is rejecting, send to student/user
+      targetSocketId = this._userSocketMap.get(to);
+      console.log(`Tutor rejected call, notifying student ${to}`);
+    } else {
+      console.error(`Unknown sender type: ${sender}`);
+      socket.emit("error", { message: "Invalid sender type" });
+      return;
+    }
 
-        this._io.to(targetSocketId).emit(SocketEvent.RejectCall, data);
-        console.log(`Emitted reject-call to ${to} from ${sender}`);
-      } catch (error: any) {
-        console.error("Error processing reject call:", {
-          message: error.message,
-          stack: error.stack,
-          data,
-          userId,
-          socketId: socket.id,
-        });
-        socket.emit("error", {
-          message: "Failed to process call rejection",
-          error: error.message,
-        });
-      }
+    if (!targetSocketId) {
+      console.warn(`Target ${to} is not online for reject call`, { 
+        userId: to, 
+        sender,
+        userMap: Array.from(this._userSocketMap.keys()),
+        tutorMap: Array.from(this._tutorSocketMap.keys())
+      });
+      return;
+    }
+
+    // Emit the rejection to the target
+    const rejectionPayload = {
+      ...data,
+      message: `Call ${sender === "student" || sender === "user" ? "rejected" : "ended"} by ${name || sender}`,
+    };
+
+    this._io.to(targetSocketId).emit(SocketEvent.RejectCall, rejectionPayload);
+    console.log(`Emitted reject-call to ${to} from ${sender}:`, rejectionPayload);
+
+    // Also emit to the sender to confirm the rejection was processed
+    socket.emit(SocketEvent.RejectCall, {
+      ...rejectionPayload,
+      message: "Call ended successfully"
     });
+
+  } catch (error: any) {
+    console.error("Error processing reject call:", {
+      message: error.message,
+      stack: error.stack,
+      data,
+      userId,
+      socketId: socket.id,
+    });
+    socket.emit("error", {
+      message: "Failed to process call rejection",
+      error: error.message,
+    });
+  }
+});
 
     socket.on(SocketEvent.Message, async (data: any) => {
       console.log("Received message:", JSON.stringify(data, null, 2));

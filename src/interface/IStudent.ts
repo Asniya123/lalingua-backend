@@ -3,6 +3,7 @@ import { ObjectId, Document, Schema, Types, FilterQuery } from "mongoose";
 import { ILanguage } from "./ILanguage.js";
 import { ITutor } from "./ITutor.js";
 import { ITutorDisplay } from "./ICourse.js";
+import { IReview } from "./IReview.js";
 
 export interface IStudent extends Document {
     username: any;
@@ -32,6 +33,7 @@ export interface IEnrollment {
     currency: string; 
     status: 'pending' | 'completed' | 'failed';
     enrolledAt: Date; 
+    
   }
 
   export interface IEnrolledCourse {
@@ -43,6 +45,7 @@ export interface IEnrollment {
     enrolledDate?: string;
     status?: string;
     tutor?: ITutorDisplay; 
+    review?: IReview;
   }
 
 export interface AuthenticatedRequest extends Request{

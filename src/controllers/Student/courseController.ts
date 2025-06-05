@@ -235,15 +235,20 @@ export default class CourseController implements ISCourseController {
   }
   
 
-  async getEnrolledCourses(req: Request, res: Response): Promise<void> {
-    const { userId } = req.params;
+   async getEnrolledCourses(req: Request, res: Response): Promise<void> {
     try {
-      const courses = await this.courseService.getEnrolledCourses(userId);
-      res.status(200).json({ success: true, courses });
+        const userId = req.params.userId || req.user?._id;
+        if (!userId) {
+            res.status(401).json({ success: false, message: "Unauthorized" });
+            return;
+        }
+        const courses = await this.courseService.getEnrolledCourses(userId);
+        res.status(200).json({ success: true, message: "Enrolled courses retrieved successfully", courses });
     } catch (error) {
-      res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Error fetching enrolled courses" });
+        console.error("Error in getEnrolledCourses:", error);
+        res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Error fetching enrolled courses" });
     }
-  }
+   }
 
   async cancelEnrollment(req: Request, res: Response): Promise<void> {
     const { userId, courseId } = req.params;

@@ -11,6 +11,8 @@ import { ILesson, ILessonRepository } from "../../interface/ILesson.js";
 import lessonRepository from "../../repositories/tutor/lessonRepository.js";
 import { IWalletRepository } from "../../interface/IWallet.js";
 import walletRepository from "../../repositories/student/walletRepository.js";
+import { IReviewRepository } from "../../interface/IReview.js";
+import reviewRepository from "../../repositories/student/reviewRepository.js";
 
 dotenv.config();
 
@@ -20,6 +22,7 @@ export class CourseService implements ISCourseService {
   private studentRepository: IStudentRepository;
   private lessonRepository: ILessonRepository;
   private walletRepository: IWalletRepository
+  private reviewRepository: IReviewRepository
   private razorpay: Razorpay;
 
   constructor(
@@ -27,13 +30,15 @@ export class CourseService implements ISCourseService {
     categoryRepository: ICategoryRepository,
     studentRepository: IStudentRepository,
     lessonRepository: ILessonRepository,
-    walletRepository: IWalletRepository
+    walletRepository: IWalletRepository,
+    reviewRepository: IReviewRepository
   ) {
     this.courseRepository = courseRepository;
     this.categoryRepository = categoryRepository;
     this.studentRepository = studentRepository;
     this.lessonRepository = lessonRepository;
     this.walletRepository = walletRepository
+    this.reviewRepository = reviewRepository
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -211,45 +216,51 @@ export class CourseService implements ISCourseService {
 
   async getEnrolledCourses(userId: string): Promise<IEnrolledCourse[]> {
     try {
-    const student = await this.studentRepository.findById(userId);
-    if (!student) return [];
-  
-    const courseIds = student.enrollments
-      ? student.enrollments.map((enrollment) => enrollment.courseId)
-      : [];
-    const courses = await this.courseRepository.findByIds(courseIds);
-  
-    const enrolledCourses: IEnrolledCourse[] = courses.map((course) => {
-      const enrollment = student.enrollments?.find(
-        (enrollment) => enrollment.courseId.toString() === course._id!.toString() 
+      const student = await this.studentRepository.findById(userId);
+      if (!student) return [];
+
+      const courseIds = student.enrollments
+        ? student.enrollments.map((enrollment) => enrollment.courseId)
+        : [];
+      const courses = await this.courseRepository.findByIds(courseIds);
+
+      const enrolledCourses: IEnrolledCourse[] = await Promise.all(
+        courses.map(async (course) => {
+          const enrollment = student.enrollments?.find(
+            (enrollment) => enrollment.courseId.toString() === course._id!.toString()
+          );
+
+          // Fetch review for this user and course
+          const review = await this.reviewRepository.findByUserAndCourse(userId, course._id!.toString());
+
+          return {
+            _id: course._id!,
+            courseTitle: course.courseTitle || "Untitled Course",
+            imageUrl: course.imageUrl,
+            category: course.category,
+            language: course.language,
+            tutorId: course.tutorId,
+            description: course.description,
+            regularPrice: course.regularPrice,
+            buyCount: course.buyCount,
+            isBlock: course.isBlock,
+            lessons: course.lessons,
+            createdAt: course.createdAt,
+            updatedAt: course.updatedAt,
+            tutor: course.tutor,
+            pricePaid: enrollment?.amount || 0,
+            enrolledDate: enrollment?.enrolledAt?.toISOString() || undefined,
+            status: enrollment?.status || "Unknown",
+            review: review || undefined, // Include review if it exists
+          };
+        })
       );
-    
-      return {
-        _id: course._id!, 
-        courseTitle: course.courseTitle || "Untitled Course",
-        imageUrl: course.imageUrl,
-        category: course.category,
-        language: course.language,
-        tutorId: course.tutorId,
-        description: course.description,
-        regularPrice: course.regularPrice,
-        buyCount: course.buyCount,
-        isBlock: course.isBlock,
-        lessons: course.lessons,
-        createdAt: course.createdAt,
-        updatedAt: course.updatedAt,
-        tutor: course.tutor,
-        pricePaid: enrollment?.amount || 0,
-        enrolledDate: enrollment?.enrolledAt?.toISOString() || undefined,
-        status: enrollment?.status || "Unknown",
-      };
-    });
-  
-    return enrolledCourses;
-  } catch (error) {
-    console.error('Error fetching enrolled courses:', error);
-    throw new Error('Failed to retrieve enrolled courses');
-  }
+
+      return enrolledCourses;
+    } catch (error) {
+      console.error("Error fetching enrolled courses:", error);
+      throw new Error("Failed to retrieve enrolled courses");
+    }
   }
 
   async cancelEnrollment(
@@ -362,5 +373,6 @@ export default new CourseService(
   categoryRepository,
   studentRepo,
   lessonRepository,
-  walletRepository
+  walletRepository,
+  reviewRepository
 );

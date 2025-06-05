@@ -131,3 +131,18 @@ export interface ITutorChatMsgcontroller {
   getRoom(req: Request, res: Response): Promise<void>;
   getRoomMessage(req: Request, res: Response): Promise<void>;
 }
+
+
+
+//socket controller
+
+export interface VideoCallData {
+  to: string;
+  from: string;
+  tutorName?: string;
+  tutorImage?: string;
+  studentName?: string;
+  studentImage?: string;
+  callType: string;
+  roomId: string;
+}

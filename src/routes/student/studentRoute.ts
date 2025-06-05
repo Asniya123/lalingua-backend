@@ -10,6 +10,8 @@ import WalletController from "../../controllers/Student/walletController.js";
 import walletService from "../../service/Student/walletService.js";
 import NotificationController from "../../controllers/Socket/notificationController.js";
 import notificationService from "../../service/UseCase/notificationService.js";
+import ReviewController from "../../controllers/Student/reviewController.js";
+import reviewService from "../../service/Student/reviewService.js";
 
 
 
@@ -66,5 +68,10 @@ const notificationController = new NotificationController(notificationService)
 
 router.get("/user/:userId", authenticate, notificationController.getUserNotifications.bind(notificationController));
 
+
+//Review 
+const reviewController = new ReviewController(reviewService)
+
+router.post('/course-review', authenticate, reviewController.createReview.bind(reviewController))
 
 export default router

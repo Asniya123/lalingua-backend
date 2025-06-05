@@ -219,6 +219,8 @@ export default class SocketController implements ISocketController {
 
       try {
         const tutorSocketId = this._tutorSocketMap.get(to);
+        const studentSocketId = this._userSocketMap.get(from);
+
         if (!tutorSocketId) {
           console.warn(`Tutor ${to} is not online`, { userId: to });
           socket.emit(SocketEvent.RejectCall, {
@@ -229,9 +231,23 @@ export default class SocketController implements ISocketController {
           return;
         }
 
-        this._io.to(tutorSocketId).emit(SocketEvent.TutorCallAccept, { from, roomId, tutorId: to });
-        console.log(`Emitted tutor-call-accept to tutor ${to}:`, { from, roomId });
+        if (!studentSocketId) {
+          console.warn(`Student ${from} is not online`, { userId: from });
+          socket.emit(SocketEvent.RejectCall, {
+            to: to,
+            sender: "system",
+            message: "Student is not online",
+          });
+          return;
+        }
 
+        // Notify both tutor and student to join the room
+        const callAcceptPayload = { roomId, from, tutorId: to };
+        this._io.to(tutorSocketId).emit(SocketEvent.TutorCallAccept, callAcceptPayload);
+        this._io.to(studentSocketId).emit(SocketEvent.TutorCallAccept, callAcceptPayload);
+        console.log(`Emitted tutor-call-accept to tutor ${to} and student ${from}:`, callAcceptPayload);
+
+        // Save video call message
         const message = await this.chatService.saveMessage(
           roomId,
           from,
@@ -258,39 +274,62 @@ export default class SocketController implements ISocketController {
       }
     });
 
-    socket.on(SocketEvent.TutorCallAccept, async (data: { tutorId: string; from: string; roomId: string }) => {
-      console.log("Received tutor-call-accept:", JSON.stringify(data, null, 2));
+    // Remove redundant tutor-call-accept handler
+    // socket.on(SocketEvent.TutorCallAccept, ...) is no longer needed since accept-incoming-call handles both
 
-      const missingFields: string[] = [];
-      if (!data.tutorId) missingFields.push("tutorId");
-      if (!data.from) missingFields.push("from");
-      if (!data.roomId) missingFields.push("roomId");
+    socket.on(SocketEvent.RejectCall, async (data: { to: string; sender: string; name?: string; from?: string }) => {
+      console.log("Received reject-call:", JSON.stringify(data, null, 2));
+      const { to, sender, name, from } = data;
 
-      if (missingFields.length > 0) {
-        console.error(`Invalid tutor-call-accept data. Missing: ${missingFields.join(", ")}`, {
-          data,
-          userId,
-          socketId: socket.id,
-        });
-        socket.emit("error", {
-          message: `Invalid tutor-call-accept data. Missing: ${missingFields.join(", ")}`,
-          fields: missingFields,
-        });
+      if (!to || !sender) {
+        console.error(
+          `Invalid reject call data. Missing: ${!to ? "to" : ""} ${!sender ? "sender" : ""}`,
+          { data, userId, socketId: socket.id }
+        );
+        socket.emit("error", { message: "Invalid call data" });
         return;
       }
 
       try {
-        const studentSocketId = this._userSocketMap.get(data.from);
-        if (!studentSocketId) {
-          console.warn(`Student ${data.from} is not online`, { userId: data.from });
-          socket.emit("error", { message: `Student ${data.from} is not online` });
+        let targetSocketId: string | undefined;
+        if (sender === "student" || sender === "user") {
+          targetSocketId = this._tutorSocketMap.get(to);
+          console.log(`Student rejected call, notifying tutor ${to}`);
+        } else if (sender === "tutor") {
+          targetSocketId = this._userSocketMap.get(to);
+          console.log(`Tutor rejected call, notifying student ${to}`);
+        } else {
+          console.error(`Unknown sender type: ${sender}`);
+          socket.emit("error", { message: "Invalid sender type" });
           return;
         }
 
-        this._io.to(studentSocketId).emit(SocketEvent.TutorCallAccept, { roomId: data.roomId });
-        console.log(`Emitted tutor-call-accept to student ${data.from}:`, { roomId: data.roomId });
+        if (!targetSocketId) {
+          console.warn(`Target ${to} is not online for reject call`, {
+            userId: to,
+            sender,
+          });
+          return;
+        }
+
+        const rejectionPayload = {
+          to,
+          sender,
+          name: name || sender,
+          from: from || userId,
+          message: `Call ${sender === "student" || sender === "user" ? "rejected" : "ended"} by ${name || sender}`,
+        };
+
+        this._io.to(targetSocketId).emit(SocketEvent.RejectCall, rejectionPayload);
+        console.log(`Emitted reject-call to ${to} from ${sender}:`, rejectionPayload);
+
+        // Confirm rejection to sender
+        socket.emit(SocketEvent.RejectCall, {
+          ...rejectionPayload,
+          message: "Call ended successfully",
+        });
       } catch (error: any) {
-        console.error("Error processing tutor-call-accept:", {
+        console.error("Error processing reject call:", {
           message: error.message,
           stack: error.stack,
           data,
@@ -298,84 +337,11 @@ export default class SocketController implements ISocketController {
           socketId: socket.id,
         });
         socket.emit("error", {
-          message: "Failed to process tutor call acceptance",
+          message: "Failed to process call rejection",
           error: error.message,
         });
       }
     });
-
-    // Fixed reject-call handler in socketController.ts
-
-socket.on(SocketEvent.RejectCall, async (data: { to: string; sender: string; name?: string; from?: string }) => {
-  console.log("Received reject-call:", JSON.stringify(data, null, 2));
-  const { to, sender, name, from } = data;
-
-  if (!to || !sender) {
-    console.error(
-      `Invalid reject call data. Missing: ${!to ? "to" : ""} ${!sender ? "sender" : ""}`,
-      { data, userId, socketId: socket.id }
-    );
-    socket.emit("error", { message: "Invalid call data" });
-    return;
-  }
-
-  try {
-    // Determine the correct socket map based on sender
-    let targetSocketId: string | undefined;
-    
-    if (sender === "student" || sender === "user") {
-      // Student/user is rejecting, send to tutor
-      targetSocketId = this._tutorSocketMap.get(to);
-      console.log(`Student rejected call, notifying tutor ${to}`);
-    } else if (sender === "tutor") {
-      // Tutor is rejecting, send to student/user
-      targetSocketId = this._userSocketMap.get(to);
-      console.log(`Tutor rejected call, notifying student ${to}`);
-    } else {
-      console.error(`Unknown sender type: ${sender}`);
-      socket.emit("error", { message: "Invalid sender type" });
-      return;
-    }
-
-    if (!targetSocketId) {
-      console.warn(`Target ${to} is not online for reject call`, { 
-        userId: to, 
-        sender,
-        userMap: Array.from(this._userSocketMap.keys()),
-        tutorMap: Array.from(this._tutorSocketMap.keys())
-      });
-      return;
-    }
-
-    // Emit the rejection to the target
-    const rejectionPayload = {
-      ...data,
-      message: `Call ${sender === "student" || sender === "user" ? "rejected" : "ended"} by ${name || sender}`,
-    };
-
-    this._io.to(targetSocketId).emit(SocketEvent.RejectCall, rejectionPayload);
-    console.log(`Emitted reject-call to ${to} from ${sender}:`, rejectionPayload);
-
-    // Also emit to the sender to confirm the rejection was processed
-    socket.emit(SocketEvent.RejectCall, {
-      ...rejectionPayload,
-      message: "Call ended successfully"
-    });
-
-  } catch (error: any) {
-    console.error("Error processing reject call:", {
-      message: error.message,
-      stack: error.stack,
-      data,
-      userId,
-      socketId: socket.id,
-    });
-    socket.emit("error", {
-      message: "Failed to process call rejection",
-      error: error.message,
-    });
-  }
-});
 
     socket.on(SocketEvent.Message, async (data: any) => {
       console.log("Received message:", JSON.stringify(data, null, 2));
@@ -441,7 +407,7 @@ socket.on(SocketEvent.RejectCall, async (data: { to: string; sender: string; nam
 
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${userId}`);
-      this.removeSocket(userId, role); // Fixed typo: changed removeSocketId to removeSocket
+      this.removeSocket(userId, role);
       if (role === "user") {
         this._io.to("user-room").emit(SocketEvent.GetOnlineUsers, Array.from(this._userSocketMap.keys()));
       }

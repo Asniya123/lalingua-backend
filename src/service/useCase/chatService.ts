@@ -136,61 +136,63 @@ class ChatService implements IChatMsgService {
   }
 
   async saveMessage(
-    roomId: string,
-    senderId: string,
-    message: string,
-    message_time: Date,
-    message_type: string
-  ): Promise<IMessage | null> {
-    try {
-      console.log(`Service: Saving message for roomId: ${roomId}, senderId: ${senderId}`);
+  roomId: string,
+  senderId: string,
+  message: string,
+  message_time: Date,
+  message_type: string,
+  isRead: boolean = false // Add optional isRead parameter with default value
+): Promise<IMessage | null> {
+  try {
+    console.log(`Service: Saving message for roomId: ${roomId}, senderId: ${senderId}`);
 
-      if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
-        console.error("Invalid roomId or senderId:", { roomId, senderId });
-        throw new Error("Invalid room or sender ID");
-      }
-      if (!message.trim()) {
-        console.error("Message is empty:", { roomId, senderId });
-        throw new Error("Message cannot be empty");
-      }
-
-      const sender = (await this.tutorRepo.findById(senderId)) || (await this.studentRepo.findById(senderId));
-      if (!sender) {
-        console.error(`Sender not found: ${senderId}`);
-        throw new Error(`Sender not found: ${senderId}`);
-      }
-
-      const room = await this.chatRepository.getRoomById(roomId, senderId);
-      if (!room) {
-        console.error(`Room not found: ${roomId}`);
-        throw new Error(`Room not found: ${roomId}`);
-      }
-
-      const savedMessage = await this.chatRepository.saveMessage(
-        roomId,
-        senderId,
-        message.trim(),
-        message_time,
-        message_type
-      );
-
-      if (!savedMessage) {
-        console.error("Message not saved:", { roomId, senderId, message });
-        throw new Error("Message not saved");
-      }
-
-      console.log("Message saved:", JSON.stringify(savedMessage, null, 2));
-      return savedMessage;
-    } catch (error: any) {
-      console.error("Service: Error in saveMessage:", {
-        message: error.message,
-        roomId,
-        senderId,
-        stack: error.stack,
-      });
-      throw new Error(`Failed to save message: ${error.message}`);
+    if (!mongoose.Types.ObjectId.isValid(roomId) || !mongoose.Types.ObjectId.isValid(senderId)) {
+      console.error("Invalid roomId or senderId:", { roomId, senderId });
+      throw new Error("Invalid room or sender ID");
     }
+    if (!message.trim()) {
+      console.error("Message is empty:", { roomId, senderId });
+      throw new Error("Message cannot be empty");
+    }
+
+    const sender = (await this.tutorRepo.findById(senderId)) || (await this.studentRepo.findById(senderId));
+    if (!sender) {
+      console.error(`Sender not found: ${senderId}`);
+      throw new Error(`Sender not found: ${senderId}`);
+    }
+
+    const room = await this.chatRepository.getRoomById(roomId, senderId);
+    if (!room) {
+      console.error(`Room not found: ${roomId}`);
+      throw new Error(`Room not found: ${roomId}`);
+    }
+
+    const savedMessage = await this.chatRepository.saveMessage(
+      roomId,
+      senderId,
+      message.trim(),
+      message_time,
+      message_type,
+      isRead 
+    );
+
+    if (!savedMessage) {
+      console.error("Message not saved:", { roomId, senderId, message });
+      throw new Error("Message not saved");
+    }
+
+    console.log("Message saved:", JSON.stringify(savedMessage, null, 2));
+    return savedMessage;
+  } catch (error: any) {
+    console.error("Service: Error in saveMessage:", {
+      message: error.message,
+      roomId,
+      senderId,
+      stack: error.stack,
+    });
+    throw new Error(`Failed to save message: ${error.message}`);
   }
+}
 
   async getContacts(search: string, userId: string | undefined): Promise<(IStudent | ITutor)[]> {
     try {
@@ -280,7 +282,7 @@ class ChatService implements IChatMsgService {
     }
   }
 
-  async markMessagesAsRead(chatId: string, userId: string): Promise<void> {
+  async markMessagesAsRead(chatId: string, userId: string): Promise<boolean> {
   try {
     console.log(`Service: markMessagesAsRead called with chatId: ${chatId}, userId: ${userId}`);
 
@@ -289,17 +291,19 @@ class ChatService implements IChatMsgService {
       throw new Error("Invalid chat or user ID");
     }
 
-   
     const room = await this.chatRepository.getRoomById(chatId, userId);
     if (!room) {
       console.error(`Room not found or user not authorized: ${chatId}`);
       throw new Error(`Room not found or user not authorized: ${chatId}`);
     }
 
-   
-    await this.chatRepository.markMessagesAsRead(chatId, userId);
-
-    console.log(`Messages marked as read for chatId: ${chatId}, userId: ${userId}`);
+    const updated = await this.chatRepository.markMessagesAsRead(chatId, userId);
+    console.log(
+      updated
+        ? `Messages marked as read for chatId: ${chatId}, userId: ${userId}`
+        : `No messages to mark as read for chatId: ${chatId}`
+    );
+    return updated;
   } catch (error: any) {
     console.error("Service: Error in markMessagesAsRead:", {
       message: error.message,

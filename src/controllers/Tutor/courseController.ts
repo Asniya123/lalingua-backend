@@ -1,12 +1,16 @@
 import { Request, Response } from "express";
-import { ICourse, ICourseController, ICourseService } from "../../interface/ICourse.js";
+import {
+  ICourse,
+  ICourseController,
+  ICourseService,
+} from "../../interface/ICourse.js";
 
-export default class CourseController implements ICourseController{
-  private courseService: ICourseService; 
+export default class CourseController implements ICourseController {
+  private courseService: ICourseService;
 
   constructor(courseService: ICourseService) {
-      this.courseService = courseService;
-      this.getCourse = this.getCourse.bind(this); 
+    this.courseService = courseService;
+    this.getCourse = this.getCourse.bind(this);
   }
 
   async addCourse(req: Request, res: Response): Promise<void> {
@@ -15,15 +19,33 @@ export default class CourseController implements ICourseController{
         res.status(403).json({ error: "Unauthorized access" });
         return;
       }
-  
+
       const tutorId = req.tutor._id;
-      const { courseTitle, imageUrl, category, language, description, regularPrice } = req.body;
-  
-      if (!courseTitle || !imageUrl || !category || !language || !description || regularPrice <= 0) {
-        res.status(400).json({ error: "All fields are required, and price must be greater than 0." });
+      const {
+        courseTitle,
+        imageUrl,
+        category,
+        language,
+        description,
+        regularPrice,
+      } = req.body;
+
+      if (
+        !courseTitle ||
+        !imageUrl ||
+        !category ||
+        !language ||
+        !description ||
+        regularPrice <= 0
+      ) {
+        res
+          .status(400)
+          .json({
+            error: "All fields are required, and price must be greater than 0.",
+          });
         return;
       }
-  
+
       const course = await this.courseService.addCourse({
         courseTitle,
         imageUrl,
@@ -33,14 +55,14 @@ export default class CourseController implements ICourseController{
         regularPrice,
         tutorId,
       });
-  
+
       if (!course) {
         res.status(400).json({ error: "Failed to create course" });
         return;
       }
-  
+
       const sanitizedCourse: ICourse = {
-        _id: course._id, 
+        _id: course._id,
         courseTitle: course.courseTitle,
         imageUrl: course.imageUrl,
         category: course.category,
@@ -53,94 +75,134 @@ export default class CourseController implements ICourseController{
         tutorId: course.tutorId,
         isBlock: course.isBlock,
       };
-  
-      res.status(201).json({ message: "Course added successfully", course: sanitizedCourse });
+
+      res
+        .status(201)
+        .json({
+          message: "Course added successfully",
+          course: sanitizedCourse,
+        });
     } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to add course" });
+      res
+        .status(400)
+        .json({
+          error:
+            error instanceof Error ? error.message : "Failed to add course",
+        });
     }
   }
-    
+
   async listCourses(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.tutor?._id) {
+      res.status(403).json({ message: "Unauthorized access" });
+      return;
+    }
+
+    const tutorId = req.tutor._id;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 5;
+    const search = (req.query.search as string) || "";
+
+    if (page < 1 || limit < 1) {
+      res.status(400).json({
+        success: false,
+        error: "Invalid pagination parameters. Page and limit must be positive numbers",
+      });
+      return; // Add return statement here
+    }
+
+    // Pass the search parameter to the service
+    const { courses, total } = await this.courseService.listCourses(
+      tutorId,
+      page,
+      limit,
+      search // Add search parameter
+    );
+
+    res.status(200).json({ 
+      message: "Courses retrieved successfully", 
+      courses, 
+      total 
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to fetch courses",
+    });
+  }
+}
+
+  async getCourse(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.tutor?._id) {
-        res.status(403).json({ message: 'Unauthorized access' });
+      const { courseId } = req.params;
+      if (!courseId) {
+        res.status(400).json({ error: "Course ID is required" });
         return;
       }
 
-      const tutorId = req.tutor._id;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 5;
-      const { courses, total } = await this.courseService.listCourses(tutorId, page, limit);
-      res.status(200).json({ message: 'Courses retrieved successfully', courses, total });
+      const course = await this.courseService.getCourse(courseId);
+      if (!course) {
+        res.status(404).json({ error: "Course not found" });
+        return;
+      }
+
+      res.status(200).json(course);
     } catch (error) {
-      res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch courses' });
+      console.error("Error fetching course:", error);
+      res.status(500).json({
+        error:
+          error instanceof Error ? error.message : "Failed to fetch course",
+      });
     }
   }
-    
-      async getCourse(req: Request, res: Response): Promise<void> {
-        try {
-          const { courseId } = req.params;
-          if (!courseId) {
-            res.status(400).json({ error: "Course ID is required" });
-            return;
-          }
-    
-          const course = await this.courseService.getCourse(courseId);
-          if (!course) {
-            res.status(404).json({ error: "Course not found" });
-            return;
-          }
-    
-          res.status(200).json(course);
-        } catch (error) {
-          console.error("Error fetching course:", error);
-          res.status(500).json({
-            error: error instanceof Error ? error.message : "Failed to fetch course",
-          });
-        }
+
+  async editCourse(req: Request, res: Response): Promise<void> {
+    try {
+      const { courseId } = req.params;
+      const courseData = req.body;
+      if (!courseId) {
+        res.status(400).json({ error: "Course ID is required" });
+        return;
       }
-    
-      async editCourse(req: Request, res: Response): Promise<void> {
-        try {
-          const { courseId } = req.params;
-          const courseData = req.body;
-          if (!courseId) {
-            res.status(400).json({ error: "Course ID is required" });
-            return;
-          }
-    
-          const course = await this.courseService.editCourse(courseId, courseData);
-          if (!course) {
-            res.status(404).json({ error: "Course not found" });
-            return;
-          }
-    
-          res.status(200).json({ message: "Course updated successfully", course });
-        } catch (error) {
-          console.error("Error updating course:", error);
-          res.status(500).json({
-            error: error instanceof Error ? error.message : "Failed to update course",
-          });
-        }
+
+      const course = await this.courseService.editCourse(courseId, courseData);
+      if (!course) {
+        res.status(404).json({ error: "Course not found" });
+        return;
       }
-    
-      async deleteCourse(req: Request, res: Response): Promise<void> {
-        try {
-          const { courseId } = req.params;
-          if (!courseId) {
-            res.status(400).json({ error: "Course ID is required" });
-            return;
-          }
-    
-          const success = await this.courseService.deleteCourse(courseId);
-          if (!success) {
-            res.status(404).json({ error: "Course not found" });
-            return;
-          }
-    
-          res.status(200).json({ message: "Course deleted successfully" });
-        } catch (error) {
-          res.status(500).json({ error: error instanceof Error ? error.message : "Failed to delete course" });
-        }
+
+      res.status(200).json({ message: "Course updated successfully", course });
+    } catch (error) {
+      console.error("Error updating course:", error);
+      res.status(500).json({
+        error:
+          error instanceof Error ? error.message : "Failed to update course",
+      });
+    }
+  }
+
+  async deleteCourse(req: Request, res: Response): Promise<void> {
+    try {
+      const { courseId } = req.params;
+      if (!courseId) {
+        res.status(400).json({ error: "Course ID is required" });
+        return;
       }
+
+      const success = await this.courseService.deleteCourse(courseId);
+      if (!success) {
+        res.status(404).json({ error: "Course not found" });
+        return;
+      }
+
+      res.status(200).json({ message: "Course deleted successfully" });
+    } catch (error) {
+      res
+        .status(500)
+        .json({
+          error:
+            error instanceof Error ? error.message : "Failed to delete course",
+        });
+    }
+  }
 }

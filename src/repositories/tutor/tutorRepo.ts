@@ -69,21 +69,36 @@ class TutorRepository implements ITutorRepository{
         return await tutorModel.findOne({google_id: googleId})
     }
 
-    async getTutors(page: number, limit: number, query: any = { status: 'approved' }): Promise<{tutor: ITutor[], total: number}> {
+    async getTutors(page: number, limit: number, query: any = { status: 'approved' }, search?: string ): Promise<{ tutor: ITutor[], total: number }> {
+    try {
         const skip = (page - 1) * limit;
-    
+
+        const searchQuery = search
+            ? {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                    { status: { $regex: search, $options: 'i' } },
+                ],
+            }
+            : {};
+
+        const finalQuery = { ...query, ...searchQuery };
+
         const [tutors, total] = await Promise.all([
-            tutorModel.find(query)
+            tutorModel.find(finalQuery)
                 .skip(skip)
                 .limit(limit)
                 .lean(),
-            tutorModel.countDocuments(query)
+            tutorModel.countDocuments(finalQuery),
         ]);
-    
-     
-        
+
         return { tutor: tutors, total };
+    } catch (error) {
+        console.error('Error in TutorRepository.getTutors:', error);
+        throw new Error('Failed to fetch tutors from database');
     }
+}
 
       
     async getAllTutors(): Promise<ITutor[]> {

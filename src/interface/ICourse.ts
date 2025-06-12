@@ -43,11 +43,11 @@ export interface ILessonPreview {
 
 export interface ICourseRepository {
     addCourse(courseData: ICourse): Promise<ICourse | null>;
-    listCourses(tutorId: string,page: number, limit: number): Promise<{ courses: ICourse[]; total: number }>;
+    listCourses(tutorId: string,page: number, limit: number, search?: string): Promise<{ courses: ICourse[]; total: number }>;
     findById(courseId: string): Promise<ICourse | null>
     editCourse(courseId: string, courseData: Partial<ICourse>): Promise<ICourse | null>;
     deleteCourse(courseId: string): Promise<boolean>;
-    getCourse(page: number, limit: number): Promise<{ courses: ICourse[]; total: number; }>
+    getCourse(page: number, limit: number, search?: string): Promise<{ courses: ICourse[]; total: number; }>
     updateBlockStatus(courseId: string, isBlocked: boolean): Promise<ICourse>
 
    
@@ -55,7 +55,7 @@ export interface ICourseRepository {
   
   export interface ICourseService {
     addCourse(courseData: { courseTitle: string; imageUrl: string; category: string; language: string; description: string; regularPrice: number; tutorId: string}): Promise<ICourse | null>;
-    listCourses(tutorId: string,page: number, limit: number): Promise<{ courses: ICourse[]; total: number }>;
+    listCourses(tutorId: string,page: number, limit: number, search ?: string): Promise<{ courses: ICourse[]; total: number }>;
     getCourse(courseId: string): Promise<ICourse | null>
     editCourse(courseId: string, courseData: Partial<ICourse>): Promise<ICourse | null>;
     deleteCourse(courseId: string): Promise<boolean>;

@@ -1,13 +1,12 @@
-// src/controllers/Socket/socketController.ts
 import { ISocketController, ISocketService } from "../../interface/IConversation.js";
 import { Socket, Server as SocketIOServer } from "socket.io";
 
 enum SocketEvent {
   GetOnlineUsers = "getOnlineUsers",
-  JoinedRoom = "joinedRoom",
+  JoinedRoom = "joined-room",
   Message = "message",
   NewBadge = "newBadge",
-  NewMessage = "newMessage",
+  NewMessage = "new-message",
   ToTheAdmin = "toTheAdmin",
   ToTheTutor = "toTheTutor",
   ToTutor = "toTutor",
@@ -19,6 +18,8 @@ enum SocketEvent {
   AcceptIncomingCall = "accept-incoming-call",
   RejectCall = "reject-call",
   TutorCallAccept = "tutor-call-accept",
+  MarkMessagesRead = "mark-messages-read",
+  MessageRead = "message-read",
 }
 
 interface VideoCallData {
@@ -55,13 +56,25 @@ export default class SocketController implements ISocketController {
     );
   }
 
+  private emitOnlineUsers(): void {
+    const onlineUsers = [
+      ...Array.from(this._userSocketMap.keys()),
+      ...Array.from(this._tutorSocketMap.keys()),
+      ...Array.from(this._adminSocketMap.keys()),
+    ];
+    console.log("Emitting getOnlineUsers:", JSON.stringify(onlineUsers, null, 2));
+    this._io.to("user-room").emit(SocketEvent.GetOnlineUsers, onlineUsers);
+    this._io.to("tutor-room").emit(SocketEvent.GetOnlineUsers, onlineUsers);
+    this._io.to("admin-room").emit(SocketEvent.GetOnlineUsers, onlineUsers);
+  }
+
   onConnection(socket: Socket) {
-    console.log(`Client connected: ${socket.handshake.query.userId}`);
+    console.log(`Client connected: ${socket.handshake.query.userId} with socket ID: ${socket.id}`);
     const userId = socket.handshake.query.userId as string;
     const role = socket.handshake.query.role as string;
 
     if (!userId || !role) {
-      console.error("Missing userId or role in handshake", { userId, role });
+      console.error("Missing userId or role in handshake", { userId, role, socketId: socket.id });
       socket.disconnect();
       return;
     }
@@ -85,41 +98,140 @@ export default class SocketController implements ISocketController {
         return;
     }
 
-    socket.emit(SocketEvent.GetOnlineUsers, Array.from(this._userSocketMap.keys()));
-    this._io.to("user-room").emit(SocketEvent.GetOnlineUsers, Array.from(this._userSocketMap.keys()));
+    // Emit online users to all rooms
+    this.emitOnlineUsers();
 
     socket.on("register-user", (data: { userId: string; role: string }) => {
-      console.log(`Registering user: ${data.userId} as ${data.role}`);
+      console.log(`Registering user: ${data.userId} as ${data.role} with socket ID: ${socket.id}`);
       if (data.userId && data.role) {
         switch (data.role) {
           case "user":
             this._userSocketMap.set(data.userId, socket.id);
+            socket.join("user-room");
             break;
           case "tutor":
             this._tutorSocketMap.set(data.userId, socket.id);
+            socket.join("tutor-room");
             break;
           case "admin":
             this._adminSocketMap.set(data.userId, socket.id);
+            socket.join("admin-room");
             break;
           default:
             console.error(`Invalid role in register-user: ${data.role}`);
         }
-        console.log(`Updated socket maps:`, {
-          users: Array.from(this._userSocketMap.keys()),
-          tutors: Array.from(this._tutorSocketMap.keys()),
-          admins: Array.from(this._adminSocketMap.keys()),
-        });
+        // Emit online users after registration
+        this.emitOnlineUsers();
       }
     });
 
     socket.on(SocketEvent.JoinedRoom, async (roomId: string) => {
       if (!roomId) {
-        console.error("Invalid roomId provided");
+        console.error("Invalid roomId provided", { socketId: socket.id, userId });
         socket.emit("error", { message: "Invalid roomId" });
         return;
       }
-      console.log(`Client ${userId} joined room: ${roomId}`);
+      console.log(`Client ${userId} joined room: ${roomId} with socket ID: ${socket.id}`);
       socket.join(roomId);
+      socket.emit("joined-room-ack", { roomId });
+    });
+
+    socket.on(SocketEvent.Message, async (data: any) => {
+      console.log("Received message:", JSON.stringify(data, null, 2));
+      const { roomId, recieverId, senderId, message, message_time, message_type, isRead } = data;
+
+      const missingFields: string[] = [];
+      if (!roomId) missingFields.push("roomId");
+      if (!recieverId) missingFields.push("recieverId");
+      if (!senderId) missingFields.push("senderId");
+      if (!message) missingFields.push("message");
+      if (!message_time) missingFields.push("message_time");
+
+      if (missingFields.length > 0) {
+        console.error(`Invalid message data. Missing: ${missingFields.join(", ")}`, {
+          data,
+          userId,
+          socketId: socket.id,
+        });
+        socket.emit("error", {
+          message: `Invalid message data: ${missingFields.join(", ")}`,
+          fields: missingFields,
+        });
+        return;
+      }
+
+      try {
+        const savedMessage = await this.chatService.saveMessage(
+          roomId,
+          senderId,
+          message,
+          new Date(message_time),
+          message_type || "text",
+          isRead || false
+        );
+
+        if (!savedMessage) {
+          console.error("Failed to save message:", { data, userId, socketId: socket.id });
+          socket.emit("error", { message: "Failed to save message" });
+          return;
+        }
+
+        console.log(`Emitting new-message to room ${roomId}:`, JSON.stringify(savedMessage, null, 2));
+        this._io.to(roomId).emit(SocketEvent.NewMessage, savedMessage);
+
+        if (recieverId !== senderId && !savedMessage.isRead) {
+          const receiverSocketId = this.getReceiverSocketId(recieverId);
+          if (receiverSocketId) {
+            console.log(`Emitting newBadge to receiver ${recieverId} (socket: ${receiverSocketId})`);
+            this._io.to(receiverSocketId).emit(SocketEvent.NewBadge, savedMessage);
+          }
+        }
+      } catch (error: any) {
+        console.error("Error processing message:", {
+          message: error.message,
+          stack: error.stack,
+          data,
+          userId,
+          socketId: socket.id,
+        });
+        socket.emit("error", {
+          message: "Failed to process message",
+          error: error.message,
+        });
+      }
+    });
+
+    socket.on(SocketEvent.MarkMessagesRead, async (data: { chatId: string; userId: string }) => {
+      console.log("Received mark-messages-read:", JSON.stringify(data, null, 2));
+      const { chatId, userId } = data;
+
+      if (!chatId || !userId) {
+        console.error("Invalid mark-messages-read data", { chatId, userId, socketId: socket.id });
+        socket.emit("error", { message: "Invalid chatId or userId" });
+        return;
+      }
+
+      try {
+        const messagesMarked = await this.chatService.markMessagesAsRead(chatId, userId);
+        if (messagesMarked) {
+          console.log(`Emitting message-read to room ${chatId}:`, JSON.stringify({ chatId, userId }, null, 2));
+          this._io.to(chatId).emit(SocketEvent.MessageRead, { chatId, userId });
+        } else {
+          console.log(`No messages were marked as read for chatId: ${chatId}`);
+        }
+      } catch (error: any) {
+        console.error("Error marking messages as read:", {
+          message: error.message,
+          stack: error.stack,
+          data,
+          userId,
+          socketId: socket.id,
+        });
+        socket.emit("error", {
+          message: "Failed to mark messages as read",
+          error: error.message,
+        });
+      }
     });
 
     socket.on(SocketEvent.OutgoingVideoCall, async (data: VideoCallData) => {
@@ -133,7 +245,7 @@ export default class SocketController implements ISocketController {
       if (!callType) missingFields.push("callType");
 
       if (missingFields.length > 0) {
-        console.error(`Invalid outgoing video call data. Missing fields: ${missingFields.join(", ")}`, {
+        console.error(`Invalid outgoing video call data. Missing: ${missingFields.join(", ")}`, {
           data,
           userId,
           socketId: socket.id,
@@ -142,12 +254,6 @@ export default class SocketController implements ISocketController {
           message: `Invalid video call data. Missing: ${missingFields.join(", ")}`,
           fields: missingFields,
         });
-        return;
-      }
-
-      if (to === from) {
-        console.error("Invalid video call: Cannot call yourself", { to, from });
-        socket.emit("error", { message: "Cannot initiate video call to yourself" });
         return;
       }
 
@@ -164,9 +270,9 @@ export default class SocketController implements ISocketController {
         }
 
         const videoCallPayload = {
-          _id: to, // Student ID
-          from: from, // Tutor ID
-          tutorId: from, // Explicitly include tutorId
+          _id: to,
+          from,
+          tutorId: from,
           tutorName: tutorName || "Unknown Tutor",
           tutorImage: tutorImage || "/logos/avatar.avif",
           studentName: studentName || "Unknown Student",
@@ -241,13 +347,11 @@ export default class SocketController implements ISocketController {
           return;
         }
 
-        // Notify both tutor and student to join the room
         const callAcceptPayload = { roomId, from, tutorId: to };
+        console.log(`Emitting tutor-call-accept to tutor ${to} and student ${from}:`, JSON.stringify(callAcceptPayload, null, 2));
         this._io.to(tutorSocketId).emit(SocketEvent.TutorCallAccept, callAcceptPayload);
         this._io.to(studentSocketId).emit(SocketEvent.TutorCallAccept, callAcceptPayload);
-        console.log(`Emitted tutor-call-accept to tutor ${to} and student ${from}:`, callAcceptPayload);
 
-        // Save video call message
         const message = await this.chatService.saveMessage(
           roomId,
           from,
@@ -257,6 +361,7 @@ export default class SocketController implements ISocketController {
         );
 
         if (message) {
+          console.log(`Emitting new-message for video call to room ${roomId}:`, JSON.stringify(message, null, 2));
           this._io.to(roomId).emit(SocketEvent.NewMessage, message);
         }
       } catch (error: any) {
@@ -273,9 +378,6 @@ export default class SocketController implements ISocketController {
         });
       }
     });
-
-    // Remove redundant tutor-call-accept handler
-    // socket.on(SocketEvent.TutorCallAccept, ...) is no longer needed since accept-incoming-call handles both
 
     socket.on(SocketEvent.RejectCall, async (data: { to: string; sender: string; name?: string; from?: string }) => {
       console.log("Received reject-call:", JSON.stringify(data, null, 2));
@@ -320,10 +422,9 @@ export default class SocketController implements ISocketController {
           message: `Call ${sender === "student" || sender === "user" ? "rejected" : "ended"} by ${name || sender}`,
         };
 
+        console.log(`Emitting reject-call to ${to} (socket: ${targetSocketId}):`, JSON.stringify(rejectionPayload, null, 2));
         this._io.to(targetSocketId).emit(SocketEvent.RejectCall, rejectionPayload);
-        console.log(`Emitted reject-call to ${to} from ${sender}:`, rejectionPayload);
 
-        // Confirm rejection to sender
         socket.emit(SocketEvent.RejectCall, {
           ...rejectionPayload,
           message: "Call ended successfully",
@@ -343,74 +444,10 @@ export default class SocketController implements ISocketController {
       }
     });
 
-    socket.on(SocketEvent.Message, async (data: any) => {
-      console.log("Received message:", JSON.stringify(data, null, 2));
-      const { roomId, recieverId, senderId, message, message_time, message_type } = data;
-
-      const missingFields: string[] = [];
-      if (!roomId) missingFields.push("roomId");
-      if (!recieverId) missingFields.push("recieverId");
-      if (!senderId) missingFields.push("senderId");
-      if (!message) missingFields.push("message");
-      if (!message_time) missingFields.push("message_time");
-
-      if (missingFields.length > 0) {
-        console.error(`Invalid message data. Missing: ${missingFields.join(", ")}`, {
-          data,
-          userId,
-          socketId: socket.id,
-        });
-        socket.emit("error", {
-          message: `Invalid message data: ${missingFields.join(", ")}`,
-          fields: missingFields,
-        });
-        return;
-      }
-
-      try {
-        const savedMessage = await this.chatService.saveMessage(
-          roomId,
-          senderId,
-          message,
-          new Date(message_time),
-          message_type || "text"
-        );
-
-        if (!savedMessage) {
-          console.error("Failed to save message:", { data, userId, socketId: socket.id });
-          socket.emit("error", { message: "Failed to save message" });
-          return;
-        }
-
-        if (recieverId !== senderId) {
-          const receiverSocketId = this.getReceiverSocketId(recieverId);
-          if (receiverSocketId) {
-            this._io.to(receiverSocketId).emit(SocketEvent.NewBadge, savedMessage);
-          }
-        }
-
-        this._io.to(String(savedMessage.chatId)).emit(SocketEvent.NewMessage, savedMessage);
-      } catch (error: any) {
-        console.error("Error processing message:", {
-          message: error.message,
-          stack: error.stack,
-          data,
-          userId,
-          socketId: socket.id,
-        });
-        socket.emit("error", {
-          message: "Failed to process message",
-          error: error.message,
-        });
-      }
-    });
-
     socket.on("disconnect", () => {
-      console.log(`Client disconnected: ${userId}`);
+      console.log(`Client disconnected: ${userId} with socket ID: ${socket.id}`);
       this.removeSocket(userId, role);
-      if (role === "user") {
-        this._io.to("user-room").emit(SocketEvent.GetOnlineUsers, Array.from(this._userSocketMap.keys()));
-      }
+      this.emitOnlineUsers();
     });
   }
 

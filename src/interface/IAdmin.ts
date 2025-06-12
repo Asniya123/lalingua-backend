@@ -28,15 +28,15 @@ export interface IAdminRepository {
 export interface IAdminService {
   login(email: string, password: string): Promise<ILogin>;
 
-  getUsers(page: number, limit: number): Promise<{ users: IAdmin[], total: number }>  
+  getUsers(page: number, limit: number, search?: string): Promise<{ users: IAdmin[], total: number }>  
   blockUnblock(userId: string, isBlocked: boolean): Promise<any>
 
-  getTutors(page: number, limit: number, query: Query): Promise<{tutor: IAdmin[], total: number}>
+  getTutors(page: number, limit: number, query: Query, search?: string): Promise<{tutor: IAdmin[], total: number}>
   tutorManagement(tutorId: string, isBlocked: boolean): Promise<any>
   getAllTutors(): Promise<IAdmin[]>
   updateTutorStatus(tutorId: string, status: 'approved' | 'rejected', reason?: string): Promise<{ success: boolean; message: string }>
 
-  getCourse(page: number, limit: number): Promise<{ courses: ICourse[]; total: number }>
+  getCourse(page: number, limit: number, search?: string): Promise<{ courses: ICourse[]; total: number }>
   blockedUnblocked(courseId: string, isBlocked: boolean): Promise<any>
   
 }

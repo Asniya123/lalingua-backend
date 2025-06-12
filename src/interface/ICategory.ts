@@ -9,7 +9,7 @@ export interface ICategory{
 export interface ICategoryRepository{
     addCategory(categoryData: ICategory): Promise<ICategory | null>
     editCategory(categoryId: string, updateData: Partial<ICategory>): Promise<ICategory | null>
-    listCategory(page: number, limit: number): Promise<{ categories: ICategory[], total: number }> 
+    listCategory(page: number, limit: number, search?: string): Promise<{ categories: ICategory[], total: number }> 
     listAllCategories(): Promise<ICategory[]>
     deleteCategory(categoryId: string): Promise<boolean> 
 }
@@ -18,7 +18,7 @@ export interface ICategoryService{
     
     addCategory(categoryData: ICategory): Promise<ICategory | null>
     editCategory(categoryId: string, updateData: Partial<ICategory>): Promise<ICategory | null>
-    listCategory(page: number, limit: number ): Promise<{ categories: ICategory[], total: number }>
+    listCategory(page: number, limit: number, search?: string): Promise<{ categories: ICategory[], total: number }>
     deleteCategory(categoryId: string): Promise<boolean>
 }
 

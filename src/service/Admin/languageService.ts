@@ -37,14 +37,14 @@ class LanguageService implements ILanguageService{
         return updateLanguage
     }
 
-    async listLanguage(page: number, limit: number): Promise<{ languages: ILanguage[]; total: number }> {
-      try {
-        return await this.languageRepository.listLanguage(page, limit);
-      } catch (error) {
-        console.error('Error in LanguagesService.listLanguage:', error);
+    async listLanguage(page: number, limit: number, search?: string): Promise<{ languages: ILanguage[]; total: number }> {
+    try {
+        return await this.languageRepository.listLanguage(page, limit, search);
+    } catch (error) {
+        console.error('Error in LanguageService.listLanguage:', error);
         throw new Error('Server failed to fetch languages');
-      }
     }
+}
 
     async deleteLanguage(languageId: string): Promise<boolean> {
         return await this.languageRepository.deleteLanguage(languageId)

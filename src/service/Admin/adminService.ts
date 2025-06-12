@@ -47,9 +47,9 @@ class AdminService implements IAdminService {
     };
   }
 
-  async getUsers(page: number, limit: number): Promise<{ users: IAdmin[], total: number }> {
-    return await this.studentRepository.getUsers(page, limit);
-  }
+  async getUsers(page: number, limit: number, search?: string ): Promise<{ users: IAdmin[], total: number }> {
+    return await this.studentRepository.getUsers(page, limit, search);
+}
 
   async blockUnblock(userId: string, isBlocked: boolean): Promise<any> {
     try {
@@ -68,8 +68,8 @@ class AdminService implements IAdminService {
   }
   
 
-  async getTutors(page: number, limit: number, query: any = { status: 'approved' }): Promise<{tutor: ITutor[], total: number}> {
-    return await this.tutorRepository.getTutors(page, limit, query);
+  async getTutors(page: number, limit: number, query: any = { status: 'approved' }, search?: string ): Promise<{ tutor: ITutor[], total: number }> {
+    return await this.tutorRepository.getTutors(page, limit, query, search);
 }
 
   async tutorManagement(tutorId: string, isBlocked: boolean): Promise<any> {
@@ -111,9 +111,14 @@ class AdminService implements IAdminService {
       }
   }
 
-  async getCourse(page: number, limit: number): Promise<{ courses: ICourse[]; total: number }> {
-    return await this.courseRepository.getCourse(page, limit);
-  }
+  async getCourse(page: number, limit: number, search?: string ): Promise<{ courses: ICourse[]; total: number }> {
+    try {
+        return await this.courseRepository.getCourse(page, limit, search);
+    } catch (error) {
+        console.error('Error in CourseService.getCourse:', error);
+        throw new Error('Service failed to fetch courses');
+    }
+}
 
   async blockedUnblocked(courseId: string, isBlocked: boolean): Promise<ICourse> {
     try {

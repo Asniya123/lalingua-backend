@@ -30,25 +30,29 @@ class LanguageRepository implements ILanguageRepository{
         return await languageModel.findByIdAndUpdate(languageId, updateData, { new: true})
     }
 
-    async listLanguage(page: number, limit: number): Promise<{ languages: ILanguage[]; total: number }> {
-      try {
+    async listLanguage(page: number, limit: number, search?: string): Promise<{ languages: ILanguage[]; total: number }> {
+    try {
         const skip = (page - 1) * limit;
+
+        const query = search
+            ? { name: { $regex: search, $options: 'i' } }
+            : {};
+
         const [languages, total] = await Promise.all([
-          languageModel
-            .find()
-            .skip(skip)
-            .limit(limit)
-            .lean(),
-          languageModel.countDocuments(),
+            languageModel
+                .find(query)
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            languageModel.countDocuments(query),
         ]);
-    
 
         return { languages, total };
-      } catch (error) {
-        console.error('Error in languageRepository.listLanguages:', error);
+    } catch (error) {
+        console.error('Error in LanguageRepository.listLanguages:', error);
         throw new Error('Failed to fetch languages from database');
-      }
     }
+}
 
     async deleteLanguage(languageId: string): Promise<boolean> {
         const result = await languageModel.findByIdAndDelete(languageId)

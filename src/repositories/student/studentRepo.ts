@@ -81,16 +81,30 @@ class StudentRepository implements IStudentRepository{
         ).exec()
     }
 
-    async getUsers(page: number, limit: number): Promise<{ users: IStudent[], total: number }> {
+    async getUsers(page: number, limit: number, search?: string): Promise<{ users: IStudent[], total: number }> {
+    try {
         const skip = (page - 1) * limit;
-    
+
+        const query = search
+            ? {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                ],
+            }
+            : {};
+
         const [users, total] = await Promise.all([
-          studentModel.find().skip(skip).limit(limit).lean(),
-          studentModel.countDocuments(),
+            studentModel.find(query).skip(skip).limit(limit).lean(),
+            studentModel.countDocuments(query),
         ]);
-    
+
         return { users, total };
-      }
+    } catch (error) {
+        console.error('Error in StudentRepository.getUsers:', error);
+        throw new Error('Failed to fetch users from database');
+    }
+}
 
 
     async getStudentProfile(studentId: string): Promise<IStudent | null> {

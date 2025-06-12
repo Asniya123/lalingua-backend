@@ -68,39 +68,42 @@ export default class LanguageController implements ILanguageController {
 
   async listLanguage(req: Request, res: Response): Promise<void> {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 5;
-  
-      if (page < 1 || limit < 1) {
-        res.status(400).json({
-          success: false,
-          error: 'Invalid pagination parameters. Page and limit must be positive numbers.',
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 5;
+        const search = (req.query.search as string) || '';
+
+        if (page < 1 || limit < 1) {
+            res.status(400).json({
+                success: 'Invalid pagination parameters. Page and limit must be positive numbers.',
+            });
+            return;
+        }
+
+        const { languages, total } = await this.languageService.listLanguage(page, limit, search);
+
+        res.status(200).json({
+            success: true,
+            message: 'Languages retrieved successfully',
+            data: {
+                languages,
+                pagination: {
+                    currentPage: page,
+                    totalPage: Math.ceil(total / limit),
+                    itemPerPage: limit,
+                    totalItems: total,
+                },
+            },
+            total,
         });
-        return;
-      }
-      const { languages, total } = await this.languageService.listLanguage(page, limit);
-      res.status(200).json({
-        success: true,
-        message: 'Languages retrieved successfully',
-        data: {
-          languages,
-          pagination: {
-            currentPage: page,
-            totalPage: Math.ceil(total / limit),
-            itemPerPage: limit,
-            totalItems: total // Add this
-          },
-        },
-        total 
-      });
     } catch (error) {
-      console.error('Error in LanguageController.listLanguage:', error);
-      res.status(500).json({
-        success: false,
-        error: (error as Error).message || 'Internal server error',
-      });
+        console.error('Error in LanguageController.listLanguage:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            items: (error as Error).message,
+        });
     }
-  }
+}
 
   async deleteLanguage(req: Request, res: Response): Promise<void> {
     try {

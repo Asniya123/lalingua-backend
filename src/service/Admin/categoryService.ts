@@ -4,6 +4,7 @@ import categoryRepository from "../../repositories/admin/categoryRepository.js";
 
 class CategoryService implements ICategoryService {
     private categoryRepository: ICategoryRepository; 
+    
     constructor(categoryRepository: ICategoryRepository) {
         this.categoryRepository = categoryRepository;
     }
@@ -35,14 +36,14 @@ class CategoryService implements ICategoryService {
         return updatedCategory;
     }
 
-    async listCategory(page: number, limit: number): Promise<{ categories: ICategory[], total: number }> {
-        try {
-            return await this.categoryRepository.listCategory(page, limit);
-        } catch (error) {
-            console.error('Error in CategoryService.listCategory:', error);
-            throw new Error('Service failed to fetch categories');
-        }
+    async listCategory(page: number, limit: number, search?: string ): Promise<{ categories: ICategory[], total: number }> {
+    try {
+        return await this.categoryRepository.listCategory(page, limit, search);
+    } catch (error) {
+        console.error('Error in CategoryService.listCategory:', error);
+        throw new Error('Service failed to fetch categories');
     }
+}
 
     async deleteCategory(categoryId: string): Promise<boolean> {
         return await this.categoryRepository.deleteCategory(categoryId);

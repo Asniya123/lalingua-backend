@@ -77,7 +77,7 @@ export interface googleUserData {
 
 export interface IStudentRepository {
     update(studentId: string, data: Partial<IStudent> | { $pull: any }): Promise<IStudent | null>
-    getUsers(page: number, limit: number): Promise<{ users: IStudent[], total: number }>
+    getUsers(page: number, limit: number, search?: string): Promise<{ users: IStudent[], total: number }>
     create(data: Partial<IStudent>): Promise<IStudent | null>; 
     findByEmail(email: string): Promise<IStudent | null>;
     findById(id: string): Promise<IStudent | null>;

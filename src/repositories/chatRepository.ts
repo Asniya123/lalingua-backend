@@ -12,77 +12,78 @@ import studentRepo from "./student/studentRepo.js";
 
 class ChatRepository implements IChatRepository {
   async saveMessage(
-    roomId: string,
-    senderId: string,
-    message: string,
-    message_time: Date,
-    message_type: string
-  ): Promise<IMessage | null> {
-    try {
-      if (
-        !mongoose.Types.ObjectId.isValid(roomId) ||
-        !mongoose.Types.ObjectId.isValid(senderId)
-      ) {
-        throw new Error("Invalid roomId or senderId");
-      }
-
-      const allowedMessageTypes = ["text", "image", "video", "file"];
-      if (!allowedMessageTypes.includes(message_type)) {
-        throw new Error("Invalid message type");
-      }
-
-      const conversation = await chatModel.findById(roomId).lean();
-      if (!conversation) {
-        throw new Error("Chat room not found");
-      }
-
-      if (
-        !conversation.participants.some((p: any) => p.toString() === senderId)
-      ) {
-        throw new Error("Sender is not a participant in this conversation");
-      }
-
-      console.log(
-        `Repository: Saving message for roomId: ${roomId}, senderId: ${senderId}`
-      );
-
-      const newMessage = await MessageModel.create({
-        chatId: new mongoose.Types.ObjectId(roomId),
-        senderId: new mongoose.Types.ObjectId(senderId),
-        message,
-        message_time,
-        message_type,
-        isRead: false,
-      });
-
-      const updatedChat = await chatModel.findByIdAndUpdate(
-        roomId,
-        {
-          $push: { messages: newMessage._id },
-          $set: { lastMessage: newMessage._id },
-        },
-        { new: true }
-      );
-
-      if (!updatedChat) {
-        throw new Error("Failed to update chat room");
-      }
-
-      console.log(
-        "Message saved:",
-        JSON.stringify(newMessage.toObject(), null, 2)
-      );
-      return newMessage.toObject() as IMessage;
-    } catch (error: any) {
-      console.error("Repository: Error saving message:", {
-        message: error.message,
-        roomId,
-        senderId,
-        stack: error.stack,
-      });
-      throw new Error(`Failed to save message: ${error.message}`);
+  roomId: string,
+  senderId: string,
+  message: string,
+  message_time: Date,
+  message_type: string,
+  isRead: boolean = false 
+): Promise<IMessage | null> {
+  try {
+    if (
+      !mongoose.Types.ObjectId.isValid(roomId) ||
+      !mongoose.Types.ObjectId.isValid(senderId)
+    ) {
+      throw new Error("Invalid roomId or senderId");
     }
+
+    const allowedMessageTypes = ["text", "image", "video", "file"];
+    if (!allowedMessageTypes.includes(message_type)) {
+      throw new Error("Invalid message type");
+    }
+
+    const conversation = await chatModel.findById(roomId).lean();
+    if (!conversation) {
+      throw new Error("Chat room not found");
+    }
+
+    if (
+      !conversation.participants.some((p: any) => p.toString() === senderId)
+    ) {
+      throw new Error("Sender is not a participant in this conversation");
+    }
+
+    console.log(
+      `Repository: Saving message for roomId: ${roomId}, senderId: ${senderId}`
+    );
+
+    const newMessage = await MessageModel.create({
+      chatId: new mongoose.Types.ObjectId(roomId),
+      senderId: new mongoose.Types.ObjectId(senderId),
+      message,
+      message_time,
+      message_type,
+      isRead, // Use provided isRead value
+    });
+
+    const updatedChat = await chatModel.findByIdAndUpdate(
+      roomId,
+      {
+        $push: { messages: newMessage._id },
+        $set: { lastMessage: newMessage._id },
+      },
+      { new: true }
+    );
+
+    if (!updatedChat) {
+      throw new Error("Failed to update chat room");
+    }
+
+    console.log(
+      "Message saved:",
+      JSON.stringify(newMessage.toObject(), null, 2)
+    );
+    return newMessage.toObject() as IMessage;
+  } catch (error: any) {
+    console.error("Repository: Error saving message:", {
+      message: error.message,
+      roomId,
+      senderId,
+      stack: error.stack,
+    });
+    throw new Error(`Failed to save message: ${error.message}`);
   }
+}
 
   async getMessagesByRoom(roomId: string): Promise<IConversation> {
     try {
@@ -404,35 +405,35 @@ class ChatRepository implements IChatRepository {
   }
 
   async getUnreadMessageCount(chatId: string, userId: string): Promise<number> {
-    try {
-      if (
-        !mongoose.Types.ObjectId.isValid(chatId) ||
-        !mongoose.Types.ObjectId.isValid(userId)
-      ) {
-        throw new Error("Invalid chatId or userId");
-      }
-
-      console.log(
-        `Counting unread messages for chatId: ${chatId}, userId: ${userId}`
-      );
-      const chatCount = await MessageModel.countDocuments({
-        chatId: new mongoose.Types.ObjectId(chatId),
-        senderId: { $ne: new mongoose.Types.ObjectId(userId) },
-        isRead: false,
-      });
-
-      console.log(`Unread message count: ${chatCount}`);
-      return chatCount;
-    } catch (error: any) {
-      console.error("Error counting unread messages:", {
-        message: error.message,
-        chatId,
-        userId,
-        stack: error.stack,
-      });
-      throw new Error(`Failed to count unread messages: ${error.message}`);
+  try {
+    if (
+      !mongoose.Types.ObjectId.isValid(chatId) ||
+      !mongoose.Types.ObjectId.isValid(userId)
+    ) {
+      throw new Error("Invalid chatId or userId");
     }
+
+    console.log(
+      `Counting unread messages for chatId: ${chatId}, userId: ${userId}`
+    );
+    const chatCount = await MessageModel.countDocuments({
+      chatId: new mongoose.Types.ObjectId(chatId),
+      senderId: { $ne: new mongoose.Types.ObjectId(userId) },
+      isRead: false,
+    });
+
+    console.log(`Unread message count: ${chatCount}`);
+    return chatCount;
+  } catch (error: any) {
+    console.error("Error counting unread messages:", {
+      message: error.message,
+      chatId,
+      userId,
+      stack: error.stack,
+    });
+    throw new Error(`Failed to count unread messages: ${error.message}`);
   }
+}
 
   async getTutorChats(
     query: FilterQuery<IConversation>,
@@ -588,42 +589,43 @@ class ChatRepository implements IChatRepository {
     }
   }
 
-  async markMessagesAsRead(chatId: string, userId: string): Promise<void> {
-    try {
-      if (
-        !mongoose.Types.ObjectId.isValid(chatId) ||
-        !mongoose.Types.ObjectId.isValid(userId)
-      ) {
-        throw new Error("Invalid chatId or userId");
-      }
-
-      console.log(
-        `Repository: Marking messages as read for chatId: ${chatId}, userId: ${userId}`
-      );
-      const result = await MessageModel.updateMany(
-        {
-          chatId: new mongoose.Types.ObjectId(chatId),
-          senderId: { $ne: new mongoose.Types.ObjectId(userId) },
-          isRead: false,
-        },
-        {
-          $set: { isRead: true },
-        }
-      );
-
-      console.log(
-        `Repository: Marked ${result.modifiedCount} messages as read for chatId: ${chatId}, userId: ${userId}`
-      );
-    } catch (error: any) {
-      console.error("Repository: Error marking messages as read:", {
-        message: error.message,
-        chatId,
-        userId,
-        stack: error.stack,
-      });
-      throw new Error(`Failed to mark messages as read: ${error.message}`);
+  async markMessagesAsRead(chatId: string, userId: string): Promise<boolean> {
+  try {
+    if (
+      !mongoose.Types.ObjectId.isValid(chatId) ||
+      !mongoose.Types.ObjectId.isValid(userId)
+    ) {
+      throw new Error("Invalid chatId or userId");
     }
+
+    console.log(
+      `Repository: Marking messages as read for chatId: ${chatId}, userId: ${userId}`
+    );
+    const result = await MessageModel.updateMany(
+      {
+        chatId: new mongoose.Types.ObjectId(chatId),
+        senderId: { $ne: new mongoose.Types.ObjectId(userId) },
+        isRead: false,
+      },
+      {
+        $set: { isRead: true },
+      }
+    );
+
+    console.log(
+      `Repository: Marked ${result.modifiedCount} messages as read for chatId: ${chatId}, userId: ${userId}`
+    );
+    return result.modifiedCount > 0;
+  } catch (error: any) {
+    console.error("Repository: Error marking messages as read:", {
+      message: error.message,
+      chatId,
+      userId,
+      stack: error.stack,
+    });
+    throw new Error(`Failed to mark messages as read: ${error.message}`);
   }
+}
 }
 
 export default new ChatRepository();

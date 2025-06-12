@@ -16,31 +16,37 @@ class CategoryRepository implements ICategoryRepository {
         return await categoryModel.findByIdAndUpdate(categoryId, updateData, { new: true });
     }
 
-    async listCategory(page: number, limit: number): Promise<{ categories: ICategory[], total: number }> {
-        try {
-            const skip = (page - 1) * limit;
+    async listCategory(page: number, limit: number, search?: string ): Promise<{ categories: ICategory[], total: number }> {
+    try {
+        const skip = (page - 1) * limit;
 
-            const [categories, total] = await Promise.all([
-                categoryModel
-                    .find()
-                    .skip(skip)
-                    .limit(limit)
-                    .lean(), 
-                categoryModel.countDocuments(),
-            ]);
+        const query = search
+            ? {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { description: { $regex: search, $options: 'i' } },
+                ],
+            }
+            : {};
 
-          
+        const [categories, total] = await Promise.all([
+            categoryModel
+                .find(query)
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            categoryModel.countDocuments(query),
+        ]);
 
-            return {
-                categories,
-                total,
-            };
-        } catch (error) {
-            console.error('Error in CategoryRepository.listCategory:', error);
-            throw new Error('Failed to fetch categories from database');
-        }
+        return {
+            categories,
+            total,
+        };
+    } catch (error) {
+        console.error('Error in CategoryRepository.listCategory:', error);
+        throw new Error('Failed to fetch categories from database');
     }
-
+}
     async listAllCategories(): Promise<ICategory[]> {
         return await categoryModel.find().exec(); 
       }

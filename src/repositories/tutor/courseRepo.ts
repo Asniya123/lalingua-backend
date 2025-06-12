@@ -15,24 +15,39 @@ class CourseRepository implements ICourseRepository {
     }
   }
     
-     async listCourses(tutorId: string, page: number, limit: number): Promise<{ courses: ICourse[]; total: number }> {
-      try {
-        const skip = (page - 1) * limit;
-        const [courses, total] = await Promise.all([
-          CourseModel.find({ tutorId })
-            .populate("category")
-            .populate("language")
-            .skip(skip)
-            .limit(limit)
-            .exec(),
-          CourseModel.countDocuments({ tutorId }).exec(),
-        ]);
-      
-        return { courses, total };
-      } catch (error) {
-        throw new Error(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
+     async listCourses(tutorId: string, page: number, limit: number, search?: string): Promise<{ courses: ICourse[]; total: number }> {
+  try {
+    const skip = (page - 1) * limit;
+
+    // Build the base query with tutorId
+    let baseQuery: any = { tutorId };
+
+    // Add search conditions to the base query if search term exists
+    if (search && search.trim()) {
+      baseQuery = {
+        tutorId,
+        $or: [
+          { courseTitle: { $regex: search.trim(), $options: 'i' } }, // Changed from 'name' to 'courseTitle'
+          { description: { $regex: search.trim(), $options: 'i' } },
+        ],
+      };
     }
+
+    const [courses, total] = await Promise.all([
+      CourseModel.find(baseQuery)
+        .populate("category")
+        .populate("language")
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      CourseModel.countDocuments(baseQuery).exec(), // Use the same query for counting
+    ]);
+  
+    return { courses, total };
+  } catch (error) {
+    throw new Error(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
 
 
     
@@ -57,16 +72,37 @@ class CourseRepository implements ICourseRepository {
         }
       }
 
-async getCourse(page: number, limit: number): Promise<{ courses: ICourse[]; total: number }> {
-  const skip = (page - 1) * limit;
-  const courses = await CourseModel.find({ isBlock: false})
-    .populate("category", "name") 
-    .populate("language", "name") 
-    .skip(skip)
-    .limit(limit)
-    .lean();
-  const total = await CourseModel.countDocuments({ isBlock: false});
-  return { courses, total };
+async getCourse(page: number, limit: number, search?: string): Promise<{ courses: ICourse[]; total: number }> {
+    try {
+        const skip = (page - 1) * limit;
+
+        const query = search
+            ? {
+                $or: [
+                    { courseTitle: { $regex: search, $options: 'i' } },
+                    { description: { $regex: search, $options: 'i' } },
+                    { 'category.name': { $regex: search, $options: 'i' } },
+                    { 'language.name': { $regex: search, $options: 'i' } },
+                ],
+                isBlock: false,
+            }
+            : { isBlock: false };
+
+        const [courses, total] = await Promise.all([
+            CourseModel.find(query)
+                .populate("category", "name")
+                .populate("language", "name")
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+            CourseModel.countDocuments(query),
+        ]);
+
+        return { courses, total };
+    } catch (error) {
+        console.error('Error in CourseRepository.getCourse:', error);
+        throw new Error('Failed to fetch courses from database');
+    }
 }
 
 

@@ -8,7 +8,7 @@ export interface ILanguage{
 export interface ILanguageRepository{
     addLanguage(languageData: ILanguage): Promise<ILanguage | null>
     editLanguage(languageId: string, updateData: Partial<ILanguage>): Promise<ILanguage | null>
-    listLanguage(page: number, limit: number): Promise<{languages: ILanguage[], total: number }>
+    listLanguage(page: number, limit: number, search?: string ): Promise<{ languages: ILanguage[]; total: number }>
     deleteLanguage(languageId: string): Promise<boolean> 
     getLanguages(): Promise<ILanguage[]>;
 }
@@ -17,7 +17,7 @@ export interface ILanguageService{
     
     addLanguage(languageData: ILanguage): Promise<ILanguage | null>
     editLanguage(languageId: string, updateData: Partial<ILanguage>): Promise<ILanguage | null>
-    listLanguage(page: number, limit: number ): Promise<{languages: ILanguage[], total: number }>
+    listLanguage(page: number, limit: number, search?: string ): Promise<{languages: ILanguage[], total: number }>
     deleteLanguage(languageId: string): Promise<boolean>
 }
 

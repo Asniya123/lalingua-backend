@@ -54,7 +54,8 @@ export interface IChatRepository {
     senderId: string,
     message: string,
     message_time: Date,
-    message_type: string
+    message_type: string,
+    isRead?: boolean 
   ): Promise<IMessage | null>;
   getRoom(recieverId: string, senderId: string): Promise<IConversation | null>;
   createRoom(receiverId: string, senderId: string): Promise<IConversation>;
@@ -68,7 +69,7 @@ export interface IChatRepository {
     query: FilterQuery<IConversation>,
     tutorId: string
   ): Promise<IChatData[] | null>;
-  markMessagesAsRead(chatId: string, userId: string): Promise<void>;
+ markMessagesAsRead(chatId: string, userId: string): Promise<boolean>;
   // saveAdminNotification(notification: INotification): Promise<INotification>;
   // saveNotification(notification: INotification): Promise<INotification>;
   // saveMessages(message: IMessage): Promise<void>;
@@ -104,9 +105,10 @@ export interface ISocketService {
     senderId: string,
     message: string,
     message_time: Date,
-    message_type: string
+    message_type: string,
+    isRead?: boolean
   ): Promise<IMessage | null>;
-  markMessagesAsRead(chatId: string, userId: string): Promise<void>;
+  markMessagesAsRead(chatId: string, userId: string): Promise<boolean> 
 }
 
 

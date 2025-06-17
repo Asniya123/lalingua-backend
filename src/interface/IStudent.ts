@@ -32,8 +32,9 @@ export interface IEnrollment {
     amount: number; 
     currency: string; 
     status: 'pending' | 'completed' | 'failed';
-    enrolledAt: Date; 
-    
+    enrolledAt:  Date; 
+    isCompleted?: boolean;
+    completedAt?: Date;
   }
 
   export interface IEnrolledCourse {
@@ -42,10 +43,11 @@ export interface IEnrollment {
     description?: string;
     imageUrl?: string;
     pricePaid?: number;
-    enrolledDate?: string;
+    enrolledAt: string | Date; 
     status?: string;
     tutor?: ITutorDisplay; 
     review?: IReview;
+   
   }
 
 export interface AuthenticatedRequest extends Request{

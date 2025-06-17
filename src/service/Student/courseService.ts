@@ -1,7 +1,17 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId, Types } from "mongoose";
 import { ICategoryRepository } from "../../interface/ICategory.js";
-import {ICourse,ISCourseRepository,ISCourseService,T,} from "../../interface/ICourse.js";
-import { IEnrolledCourse, IEnrollment, IStudentRepository } from "../../interface/IStudent.js";
+import {
+  CourseCompletionResult,
+  ICourse,
+  ISCourseRepository,
+  ISCourseService,
+  T,
+} from "../../interface/ICourse.js";
+import {
+  IEnrolledCourse,
+  IEnrollment,
+  IStudentRepository,
+} from "../../interface/IStudent.js";
 import categoryRepository from "../../repositories/admin/categoryRepository.js";
 import courseRepository from "../../repositories/student/courseRepository.js";
 import studentRepo from "../../repositories/student/studentRepo.js";
@@ -21,8 +31,8 @@ export class CourseService implements ISCourseService {
   private categoryRepository: ICategoryRepository;
   private studentRepository: IStudentRepository;
   private lessonRepository: ILessonRepository;
-  private walletRepository: IWalletRepository
-  private reviewRepository: IReviewRepository
+  private walletRepository: IWalletRepository;
+  private reviewRepository: IReviewRepository;
   private razorpay: Razorpay;
 
   constructor(
@@ -37,8 +47,8 @@ export class CourseService implements ISCourseService {
     this.categoryRepository = categoryRepository;
     this.studentRepository = studentRepository;
     this.lessonRepository = lessonRepository;
-    this.walletRepository = walletRepository
-    this.reviewRepository = reviewRepository
+    this.walletRepository = walletRepository;
+    this.reviewRepository = reviewRepository;
 
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -95,17 +105,16 @@ export class CourseService implements ISCourseService {
       if (!course) {
         throw new Error("Course not found");
       }
-  
+
       const lesson = await this.lessonRepository.courseLesson(courseId);
-      const regularPrice = course.regularPrice; 
-  
+      const regularPrice = course.regularPrice;
+
       return { regularPrice, course, lesson };
     } catch (error) {
       console.error("Error fetching course ID", error);
       throw error;
     }
   }
-  
 
   async createOrder(
     courseId: string,
@@ -160,41 +169,48 @@ export class CourseService implements ISCourseService {
     }
   }
 
-  async  enrollCourse(
+  async enrollCourse(
     userId: string,
     courseId: string,
-    paymentDetails: {
-      paymentMethod: 'razorpay';
-      razorpay_payment_id: string;
-      razorpay_order_id: string;
-      razorpay_signature: string;
-      walletTransactionId?: string;
-    } | {
-      paymentMethod: 'wallet';
-      walletTransactionId: string;
-      razorpay_payment_id?: string;
-      razorpay_order_id?: string;
-      razorpay_signature?: string;
-    }
+    paymentDetails:
+      | {
+          paymentMethod: "razorpay";
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+          walletTransactionId?: string;
+        }
+      | {
+          paymentMethod: "wallet";
+          walletTransactionId: string;
+          razorpay_payment_id?: string;
+          razorpay_order_id?: string;
+          razorpay_signature?: string;
+        }
   ): Promise<void> {
-   
     try {
       const course = await this.courseRepository.findById(courseId);
       if (!course) {
         throw new Error("Course not found");
       }
-  
+
       const enrollmentData: IEnrollment = {
         courseId: new mongoose.Types.ObjectId(courseId),
-        paymentId: paymentDetails.paymentMethod === 'razorpay' ? paymentDetails.razorpay_payment_id! : paymentDetails.walletTransactionId || `wallet_${Date.now()}`,
-        orderId: paymentDetails.paymentMethod === 'razorpay' ? paymentDetails.razorpay_order_id! : `wallet_order_${Date.now()}`,
-        amount: course.regularPrice, 
+        paymentId:
+          paymentDetails.paymentMethod === "razorpay"
+            ? paymentDetails.razorpay_payment_id!
+            : paymentDetails.walletTransactionId || `wallet_${Date.now()}`,
+        orderId:
+          paymentDetails.paymentMethod === "razorpay"
+            ? paymentDetails.razorpay_order_id!
+            : `wallet_order_${Date.now()}`,
+        amount: course.regularPrice,
         currency: "INR",
         status: "completed",
         enrolledAt: new Date(),
         paymentAmount: course.regularPrice,
       };
-  
+
       const updatedStudent = await this.studentRepository.updateEnrollments(
         userId,
         enrollmentData
@@ -202,7 +218,7 @@ export class CourseService implements ISCourseService {
       if (!updatedStudent) {
         throw new Error("Student not found");
       }
-  
+
       await this.courseRepository.incrementBuyCount(courseId);
     } catch (error) {
       console.error("Service error enrolling course:", error);
@@ -215,130 +231,139 @@ export class CourseService implements ISCourseService {
   }
 
   async getEnrolledCourses(userId: string): Promise<IEnrolledCourse[]> {
-    try {
-      const student = await this.studentRepository.findById(userId);
-      if (!student) return [];
+  try {
+    const student = await this.studentRepository.findById(userId);
+    if (!student) return [];
 
-      const courseIds = student.enrollments
-        ? student.enrollments.map((enrollment) => enrollment.courseId)
-        : [];
-      const courses = await this.courseRepository.findByIds(courseIds);
+    const courseIds = student.enrollments
+      ? student.enrollments.map((enrollment) => enrollment.courseId)
+      : [];
+    const courses = await this.courseRepository.findByIds(courseIds);
 
-      const enrolledCourses: IEnrolledCourse[] = await Promise.all(
-        courses.map(async (course) => {
-          const enrollment = student.enrollments?.find(
-            (enrollment) => enrollment.courseId.toString() === course._id!.toString()
-          );
+    const enrolledCourses: IEnrolledCourse[] = await Promise.all(
+      courses.map(async (course) => {
+        const enrollment = student.enrollments?.find(
+          (enrollment) =>
+            enrollment.courseId.toString() === course._id!.toString()
+        );
 
-          // Fetch review for this user and course
-          const review = await this.reviewRepository.findByUserAndCourse(userId, course._id!.toString());
+        const review = await this.reviewRepository.findByUserAndCourse(
+          userId,
+          course._id!.toString()
+        );
 
-          return {
-            _id: course._id!,
-            courseTitle: course.courseTitle || "Untitled Course",
-            imageUrl: course.imageUrl,
-            category: course.category,
-            language: course.language,
-            tutorId: course.tutorId,
-            description: course.description,
-            regularPrice: course.regularPrice,
-            buyCount: course.buyCount,
-            isBlock: course.isBlock,
-            lessons: course.lessons,
-            createdAt: course.createdAt,
-            updatedAt: course.updatedAt,
-            tutor: course.tutor,
-            pricePaid: enrollment?.amount || 0,
-            enrolledDate: enrollment?.enrolledAt?.toISOString() || undefined,
-            status: enrollment?.status || "Unknown",
-            review: review || undefined, // Include review if it exists
-          };
-        })
-      );
+        const lessons = course.lessons || [];
+        const totalLessons = lessons.length;
 
-      return enrolledCourses;
-    } catch (error) {
-      console.error("Error fetching enrolled courses:", error);
-      throw new Error("Failed to retrieve enrolled courses");
-    }
+        const completedLessonsData = await this.courseRepository.findCompletionsByUserAndCourse(
+          userId,
+          course._id!.toString()
+        );
+        const completedLessons = completedLessonsData.length;
+
+        // Fix: Use enrollment.isCompleted directly, and handle the case where totalLessons is 0
+        const isCompleted = enrollment?.isCompleted || false;
+
+        return {
+          _id: course._id!,
+          courseTitle: course.courseTitle || "Untitled Course",
+          description: course.description,
+          imageUrl: course.imageUrl,
+          pricePaid: enrollment?.amount || 0,
+          enrolledAt: enrollment?.enrolledAt?.toString() || new Date().toString(),
+          enrolledDate: enrollment?.enrolledAt?.toString() || new Date().toString(),
+          status: enrollment?.status || "Active",
+          tutor: course.tutor,
+          review: review || undefined,
+          completedLessons: completedLessons,
+          totalLessons: totalLessons,
+          isCompleted: isCompleted, // Updated
+          completedAt: enrollment?.completedAt || undefined,
+          progress: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : (isCompleted ? 100 : 0), // Updated
+        };
+      })
+    );
+
+    return enrolledCourses;
+  } catch (error) {
+    console.error("Error fetching enrolled courses:", error);
+    throw new Error("Failed to retrieve enrolled courses");
   }
+}
 
-  async cancelEnrollment(
-    userId: string,
-    courseId: string
-  ): Promise<{ success: boolean; refundAmount: number; message: string }> {
+  async cancelEnrollment(userId: string, courseId: string): Promise<{ success: boolean; refundAmount: number; message: string }> {
     try {
       if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(courseId)) {
         console.error(`Invalid ObjectId: userId=${userId}, courseId=${courseId}`);
-        throw new Error("Invalid user or course ID");
+        throw new Error('Invalid user or course ID');
       }
 
       const student = await this.studentRepository.findById(userId);
       if (!student) {
         console.error(`Student not found for userId: ${userId}`);
-        throw new Error("Student not found");
+        throw new Error('Student not found');
       }
 
       if (!student.enrollments || student.enrollments.length === 0) {
         console.error(`No enrollments found for student: ${userId}`);
-        throw new Error("No enrollments found for this student");
+        throw new Error('No enrollments found for this student');
       }
 
-      const enrollment = student.enrollments.find((e) => e.courseId.toString() === courseId);
+      const enrollment = student.enrollments.find(e => e.courseId.toString() === courseId);
       if (!enrollment) {
         console.error(`Enrollment not found for courseId: ${courseId}`);
-        throw new Error("Enrollment not found for this course");
+        throw new Error('Enrollment not found for this course');
+      }
+
+      if (enrollment.isCompleted) {
+        console.error(`Course is completed for courseId: ${courseId}`);
+        throw new Error('Cannot cancel a completed course');
       }
 
       const enrolledAt = new Date(enrollment.enrolledAt);
       if (isNaN(enrolledAt.getTime())) {
         console.error(`Invalid enrolledAt date for enrollment: ${courseId}`);
-        throw new Error("Invalid enrollment date");
+        throw new Error('Invalid enrollment date');
       }
 
       const now = new Date();
       const daysSinceEnrollment = (now.getTime() - enrolledAt.getTime()) / (1000 * 60 * 60 * 24);
       if (daysSinceEnrollment > 7) {
         console.error(`Refund period expired for enrollment: ${courseId}`);
-        throw new Error("Refund period has expired (7 days)");
+        throw new Error('Refund period has expired (7 days)');
       }
 
       const refundAmount = enrollment.amount || 0;
       if (refundAmount <= 0) {
         console.error(`Invalid refund amount for enrollment: ${courseId}`);
-        throw new Error("No payment amount found for this enrollment");
+        throw new Error('No payment amount found for this enrollment');
       }
 
       const reason = `Refund for canceling course ${courseId}`;
-      const wallet = await this.walletRepository.refundWallet(
-        enrollment.paymentId,
-        userId,
-        refundAmount,
-        reason
-      );
+      const transactionId = enrollment.paymentId || courseId;
+
+      const wallet = await this.walletRepository.refundWallet(transactionId, userId, refundAmount, reason);
       if (!wallet) {
         console.error(`Wallet refund failed for userId: ${userId}`);
-        throw new Error("Failed to process refund to wallet");
+        throw new Error('Failed to process refund to wallet');
       }
 
       const updatedStudent = await this.studentRepository.update(userId, {
-        $pull: { enrollments: { courseId } },
+        $pull: { enrollments: { courseId: new Types.ObjectId(courseId) } },
       });
       if (!updatedStudent) {
         console.error(`Failed to update student enrollments for userId: ${userId}`);
-        throw new Error("Failed to update enrollment status");
+        throw new Error('Failed to update enrollment status');
       }
 
-      console.log(
-        `Course canceled successfully for userId: ${userId}, courseId: ${courseId}, refundAmount: ${refundAmount}`
-      );
+      console.log(`Course canceled successfully for userId: ${userId}, courseId: ${courseId}, refundAmount: ${refundAmount}`);
       return {
         success: true,
         refundAmount,
         message: `Course canceled successfully. ₹${refundAmount} refunded to your wallet.`,
       };
     } catch (error: any) {
-      console.error("Service: Error in cancelEnrollment:", {
+      console.error('Service: Error in cancelEnrollment:', {
         message: error.message,
         userId,
         courseId,
@@ -348,13 +373,14 @@ export class CourseService implements ISCourseService {
     }
   }
 
-
-  async listLessons(courseId: string): Promise<{ success: boolean; message: string; lessons: ILesson[] }> {
+  async listLessons(
+    courseId: string
+  ): Promise<{ success: boolean; message: string; lessons: ILesson[] }> {
     try {
       const lessons = await this.courseRepository.findByCourseId(courseId);
       return {
         success: true,
-        message: 'Lesson retrieved successfully',
+        message: "Lesson retrieved successfully",
         lessons,
       };
     } catch (error) {
@@ -365,8 +391,87 @@ export class CourseService implements ISCourseService {
       }
     }
   }
-  
+
+  async completeLesson(userId: string, courseId: string, lessonId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    // Check for existing completion
+    const existingCompletion = await this.courseRepository.findCompletionsByUserAndCourse(userId, courseId);
+    if (existingCompletion.some(completion => completion.lessonId.toString() === lessonId)) {
+      return { success: false, message: 'Lesson already completed' };
+    }
+
+    // Create a new completion record
+    await this.courseRepository.createCompletion(userId, courseId, lessonId);
+
+    // Fetch the updated completed lessons
+    const completedLessons = await this.getCompletedLessons(userId, courseId);
+    console.log(`Completed lessons count after marking lesson ${lessonId}: ${completedLessons.length}`);
+
+    // Update the enrollment with the new completed lessons count
+    await this.courseRepository.updateEnrollmentCompletedLessons(userId, courseId, completedLessons.length);
+    console.log(`Updated enrollment for user ${userId}, course ${courseId} with ${completedLessons.length} completed lessons`);
+
+    // Check if the course is fully completed
+    const totalLessons = await this.courseRepository.getTotalLessonsCount(courseId);
+    console.log(`Total lessons for course ${courseId}: ${totalLessons}`);
+    if (completedLessons.length === totalLessons && totalLessons > 0) {
+      await this.courseRepository.markCourseCompleted(userId, courseId, new Date());
+      console.log(`Course ${courseId} marked as completed for user ${userId}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`Failed to complete lesson: ${errorMessage}`);
+    throw new Error(`Failed to complete lesson: ${errorMessage}`);
+  }
 }
+
+  async getCompletedLessons(userId: string, courseId: string): Promise<string[]> {
+    try {
+      const completions = await this.courseRepository.findCompletionsByUserAndCourse(userId, courseId);
+      return completions.map(completion => completion.lessonId.toString());
+    } catch (error: any) {
+      throw new Error(`Failed to fetch completed lessons: ${error.message || 'Unknown error'}`);
+    }
+  }
+
+ async markCourseCompleted(userId: string, courseId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    console.log(`Marking course as completed: userId=${userId}, courseId=${courseId}`);
+    const course = await this.courseRepository.findByCourseId(courseId);
+    if (!course) {
+      console.log(`Course not found: ${courseId}`);
+      return { success: false, message: "Course not found" };
+    }
+
+    const totalLessons = await this.courseRepository.getTotalLessonsCount(courseId);
+    console.log(`Total lessons for course ${courseId}: ${totalLessons}`);
+
+    // Allow marking as completed even if there are no lessons
+    if (totalLessons === 0) {
+      await this.courseRepository.markCourseCompleted(userId, courseId, new Date());
+      console.log(`Course ${courseId} with no lessons marked as completed for user ${userId}`);
+      return { success: true };
+    }
+
+    const completedLessons = await this.getCompletedLessons(userId, courseId);
+    console.log(`Completed lessons: ${completedLessons.length}, Total lessons: ${totalLessons}`);
+    if (completedLessons.length !== totalLessons) {
+      return { success: false, message: "Not all lessons are completed" };
+    }
+
+    await this.courseRepository.markCourseCompleted(userId, courseId, new Date());
+    console.log(`Course ${courseId} marked as completed for user ${userId}`);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`Failed to mark course as completed: ${errorMessage}`);
+    throw new Error(`Failed to mark course as completed: ${errorMessage}`);
+  }
+}
+}
+
 
 export default new CourseService(
   courseRepository,

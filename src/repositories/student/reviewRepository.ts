@@ -1,9 +1,8 @@
 import { IReview, IReviewInput, IReviewRepository } from "../../interface/IReview.js";
-import LessonModel from "../../models/lessonModel.js";
 import reviewModel from "../../models/reviewModel.js";
 
-class ReviewRepository implements IReviewRepository{
-    async create(reviewInput: IReviewInput): Promise<IReview> {
+class ReviewRepository implements IReviewRepository {
+  async create(reviewInput: IReviewInput): Promise<IReview> {
     const review = new reviewModel(reviewInput);
     const savedReview = await review.save();
     return {
@@ -11,9 +10,9 @@ class ReviewRepository implements IReviewRepository{
       userId: savedReview.userId,
       courseId: savedReview.courseId,
       rating: savedReview.rating,
-      review: savedReview.review,
-      createdAt: savedReview.createdAt,
-      updatedAt: savedReview.updatedAt,
+      comment: savedReview.comment, // Changed from `review` to `comment`
+      createdAt: savedReview.createdAt?.toString(),
+      updatedAt: savedReview.updatedAt?.toString(),
     };
   }
 
@@ -25,9 +24,9 @@ class ReviewRepository implements IReviewRepository{
       userId: review.userId,
       courseId: review.courseId,
       rating: review.rating,
-      review: review.review,
-      createdAt: review.createdAt,
-      updatedAt: review.updatedAt,
+      comment: review.comment, // Changed from `review` to `comment`
+      createdAt: review.createdAt?.toString(),
+      updatedAt: review.updatedAt?.toString(),
     };
   }
 
@@ -39,9 +38,9 @@ class ReviewRepository implements IReviewRepository{
       userId: review.userId,
       courseId: review.courseId,
       rating: review.rating,
-      review: review.review,
-      createdAt: review.createdAt,
-      updatedAt: review.updatedAt,
+      comment: review.comment, // Changed from `review` to `comment`
+      createdAt: review.createdAt?.toString(),
+      updatedAt: review.updatedAt?.toString(),
     };
   }
 
@@ -52,27 +51,25 @@ class ReviewRepository implements IReviewRepository{
       userId: review.userId,
       courseId: review.courseId,
       rating: review.rating,
-      review: review.review,
-      createdAt: review.createdAt,
-      updatedAt: review.updatedAt,
+      comment: review.comment, // Changed from `review` to `comment`
+      createdAt: review.createdAt?.toString(),
+      updatedAt: review.updatedAt?.toString(),
     }));
   }
 
   async update(reviewId: string, updateData: Partial<IReviewInput>): Promise<IReview | null> {
-    const review = await reviewModel.findByIdAndUpdate(
-      reviewId,
-      { $set: updateData },
-      { new: true }
-    ).exec();
+    const review = await reviewModel
+      .findByIdAndUpdate(reviewId, { $set: updateData }, { new: true })
+      .exec();
     if (!review) return null;
     return {
       _id: review._id.toString(),
       userId: review.userId,
       courseId: review.courseId,
       rating: review.rating,
-      review: review.review,
-      createdAt: review.createdAt,
-      updatedAt: review.updatedAt,
+      comment: review.comment, 
+      createdAt: review.createdAt?.toString(),
+      updatedAt: review.updatedAt?.toString(),
     };
   }
 
@@ -82,4 +79,4 @@ class ReviewRepository implements IReviewRepository{
   }
 }
 
-export default new ReviewRepository
+export default new ReviewRepository();

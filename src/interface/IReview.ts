@@ -6,9 +6,9 @@ export interface IReview {
   courseId: Types.ObjectId | string;
   userId: Types.ObjectId | string;
   rating: number;
-  review: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  comment: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 

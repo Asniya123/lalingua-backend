@@ -79,6 +79,24 @@ export interface ICourseRepository {
     category: ICategory[]; 
     courses: ICourse[];
   }
+
+export interface IUserLessonCompletion extends Document {
+   userId: string;
+  courseId: Types.ObjectId;
+  lessonId: Types.ObjectId;
+  completedLessons: number;
+  isCompleted: boolean;
+  completedAt?: Date;
+  lastAccessedAt: Date;
+}
+
+
+export interface CourseCompletionResult {
+    success: boolean;
+    message?: string;
+    isCompleted?: boolean;
+}
+
   export interface ISCourseRepository{
     listCourses(page: number, limit: number, search?: string, category?: string, sortBy?: string, language?: string): Promise<{ courses: ICourse[]; total: number }>
     findById(courseId: string): Promise<ICourse | null>
@@ -86,6 +104,12 @@ export interface ICourseRepository {
     incrementBuyCount(courseId: string): Promise<ICourse | null>
 
     findByCourseId(courseId: string): Promise<ILesson[]> 
+    createCompletion(userId: string, courseId: string, lessonId: string): Promise<IUserLessonCompletion>
+    findCompletionsByUserAndCourse(userId: string, courseId: string): Promise<IUserLessonCompletion[]>
+    markCourseCompleted(userId: string, courseId: string, completedAt: Date): Promise<void> 
+    findEnrollment(userId: string, courseId: string): Promise<any>
+    getTotalLessonsCount(courseId: string): Promise<number>
+    updateEnrollmentCompletedLessons(userId: string, courseId: string, completedLessonsCount: number): Promise<void>;
   }
 
   export interface ISCourseService{
@@ -114,6 +138,9 @@ export interface ICourseRepository {
     getEnrolledCourses(userId: string): Promise<IEnrolledCourse[]> 
     listLessons(courseId: string): Promise<{ success: boolean; message: string; lessons: ILesson[] }>
     cancelEnrollment(userId: string, courseId: string): Promise<{ success: boolean; refundAmount: number; message: string }> 
+    completeLesson(userId: string, courseId: string, lessonId: string): Promise<{ success: boolean; message?: string }>
+    getCompletedLessons(userId: string, courseId: string): Promise<string[]>
+    markCourseCompleted(userId: string, courseId: string): Promise<CourseCompletionResult>
   }
 
   export interface ISCourseController{
@@ -124,6 +151,9 @@ export interface ICourseRepository {
     getEnrolledCourses(req: Request, res: Response): Promise<void>
     listLessons(req: Request, res: Response): Promise<void> 
     cancelEnrollment(req: Request, res: Response): Promise<void> 
+    completeLesson(req: Request, res: Response): Promise<void>
+    getCompletedLessons(req: Request, res: Response): Promise<void>
+    markCourseCompleted(req: Request, res: Response): Promise<void>
   }
 
 

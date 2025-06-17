@@ -48,6 +48,9 @@ router.post('/enrollCourse', authenticate, courseController.enrollCourse.bind(co
 //CourseEnrollement
 router.get('/enrollments/:userId', authenticate, courseController.getEnrolledCourses.bind(courseController))
 router.get('/listLessons/:courseId', authenticate, courseController.listLessons.bind(courseController))
+router.get('/:courseId/completed-lessons', authenticate, courseController.getCompletedLessons.bind(courseController))
+router.post('/:courseId/lessons/:lessonId/complete', authenticate, courseController.completeLesson.bind(courseController))
+router.post('/:courseId/complete', authenticate, courseController.markCourseCompleted.bind(courseController))
 router.delete("/enrollments/:userId/:courseId", authenticate, courseController.cancelEnrollment.bind(courseController));
 
 

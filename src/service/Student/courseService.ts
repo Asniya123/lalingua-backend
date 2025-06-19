@@ -261,8 +261,9 @@ export class CourseService implements ISCourseService {
         );
         const completedLessons = completedLessonsData.length;
 
-        // Fix: Use enrollment.isCompleted directly, and handle the case where totalLessons is 0
-        const isCompleted = enrollment?.isCompleted || false;
+        // Calculate completion status based on completed lessons
+        const isCompleted = totalLessons > 0 ? completedLessons === totalLessons : false;
+        const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
         return {
           _id: course._id!,
@@ -277,9 +278,9 @@ export class CourseService implements ISCourseService {
           review: review || undefined,
           completedLessons: completedLessons,
           totalLessons: totalLessons,
-          isCompleted: isCompleted, // Updated
+          isCompleted: isCompleted,
           completedAt: enrollment?.completedAt || undefined,
-          progress: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : (isCompleted ? 100 : 0), // Updated
+          progress: progress,
         };
       })
     );
@@ -394,27 +395,26 @@ export class CourseService implements ISCourseService {
 
   async completeLesson(userId: string, courseId: string, lessonId: string): Promise<{ success: boolean; message?: string }> {
   try {
-    // Check for existing completion
+   
     const existingCompletion = await this.courseRepository.findCompletionsByUserAndCourse(userId, courseId);
     if (existingCompletion.some(completion => completion.lessonId.toString() === lessonId)) {
       return { success: false, message: 'Lesson already completed' };
     }
 
-    // Create a new completion record
+    
     await this.courseRepository.createCompletion(userId, courseId, lessonId);
 
-    // Fetch the updated completed lessons
+  
     const completedLessons = await this.getCompletedLessons(userId, courseId);
     console.log(`Completed lessons count after marking lesson ${lessonId}: ${completedLessons.length}`);
 
-    // Update the enrollment with the new completed lessons count
+    
     await this.courseRepository.updateEnrollmentCompletedLessons(userId, courseId, completedLessons.length);
     console.log(`Updated enrollment for user ${userId}, course ${courseId} with ${completedLessons.length} completed lessons`);
 
-    // Check if the course is fully completed
     const totalLessons = await this.courseRepository.getTotalLessonsCount(courseId);
     console.log(`Total lessons for course ${courseId}: ${totalLessons}`);
-    if (completedLessons.length === totalLessons && totalLessons > 0) {
+    if (totalLessons > 0 && completedLessons.length === totalLessons) {
       await this.courseRepository.markCourseCompleted(userId, courseId, new Date());
       console.log(`Course ${courseId} marked as completed for user ${userId}`);
     }
@@ -448,11 +448,10 @@ export class CourseService implements ISCourseService {
     const totalLessons = await this.courseRepository.getTotalLessonsCount(courseId);
     console.log(`Total lessons for course ${courseId}: ${totalLessons}`);
 
-    // Allow marking as completed even if there are no lessons
+    // Prevent marking courses with 0 lessons as completed automatically
     if (totalLessons === 0) {
-      await this.courseRepository.markCourseCompleted(userId, courseId, new Date());
-      console.log(`Course ${courseId} with no lessons marked as completed for user ${userId}`);
-      return { success: true };
+      console.log(`Course ${courseId} has no lessons; cannot mark as completed`);
+      return { success: false, message: "Cannot mark a course with no lessons as completed" };
     }
 
     const completedLessons = await this.getCompletedLessons(userId, courseId);

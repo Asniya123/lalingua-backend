@@ -76,5 +76,8 @@ router.get("/user/:userId", authenticate, notificationController.getUserNotifica
 const reviewController = new ReviewController(reviewService)
 
 router.post('/course-review', authenticate, reviewController.createReview.bind(reviewController))
+router.get('/listReviews/:courseId', authenticate, reviewController.getReviewsByCourse.bind(reviewController))
+router.put('/course-review/:reviewId', authenticate, reviewController.updateReview.bind(reviewController))
+router.get('/students/:studentId', authenticate, reviewController.getStudentById.bind(reviewController))
 
 export default router

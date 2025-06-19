@@ -6,6 +6,8 @@ import CourseController from "../../controllers/Tutor/courseController.js";
 import courseService from "../../service/Tutor/courseService.js";
 import LessonController from "../../controllers/Tutor/lessonController.js";
 import lessonService from "../../service/Tutor/lessonService.js";
+import EnrollmentController from "../../controllers/Tutor/enrolledStudentscontroller.js";
+import enrolledStudentsservice from "../../service/Tutor/enrolledStudentsservice.js";
 
 
 const router = Router();
@@ -13,6 +15,7 @@ const router = Router();
 const tutorController = new Tutorcontroller(tutorService);
 const courseController = new CourseController(courseService)
 const lessonController = new LessonController(lessonService)
+const enrollmentController = new EnrollmentController(enrolledStudentsservice)
 
 
 
@@ -47,7 +50,8 @@ router.put("/editLesson/:lessonId", lessonController.editLesson.bind(lessonContr
 router.delete("/deleteLesson/:lessonId", lessonController.deleteLesson.bind(lessonController)); 
 
 
-
+//EnrolledStudents
+router.get('/enrolled-students', enrollmentController.getEnrolledStudentsByTutor.bind(enrollmentController))
 
 
 

@@ -1,13 +1,18 @@
-import { IReview, IReviewInput, IReviewRepository, IReviewService } from "../../interface/IReview.js";
+import { IReview, IReviewInput, IReviewRepository, IReviewService, IStudentReview } from "../../interface/IReview.js";
+import { IStudentRepository } from "../../interface/IStudent.js";
 import reviewRepository from "../../repositories/student/reviewRepository.js";
+import studentRepo from "../../repositories/student/studentRepo.js";
 
 export class ReviewService implements IReviewService{
     private reviewRepository: IReviewRepository
+    private studentRepo: IStudentRepository
 
     constructor(
-        reviewRepository: IReviewRepository
+        reviewRepository: IReviewRepository,
+        studentRepo: IStudentRepository
     ){
         this.reviewRepository = reviewRepository
+        this.studentRepo = studentRepo
     }
 
     async createReview(reviewInput: IReviewInput): Promise<{ success: boolean; message: string; data?: IReview }> {
@@ -19,7 +24,7 @@ export class ReviewService implements IReviewService{
       if (reviewInput.rating < 1 || reviewInput.rating > 5) {
         return { success: false, message: "Rating must be between 1 and 5" };
       }
-      if (!reviewInput.review.trim()) {
+      if (!reviewInput.comment.trim()) {
         return { success: false, message: "Review text cannot be empty" };
       }
       const review = await reviewRepository.create(reviewInput);
@@ -58,7 +63,7 @@ export class ReviewService implements IReviewService{
       if (updateData.rating && (updateData.rating < 1 || updateData.rating > 5)) {
         return { success: false, message: "Rating must be between 1 and 5" };
       }
-      if (updateData.review && !updateData.review.trim()) {
+      if (updateData.comment && !updateData.comment.trim()) {
         return { success: false, message: "Review text cannot be empty" };
       }
       const review = await this.reviewRepository.update(reviewId, updateData);
@@ -84,6 +89,28 @@ export class ReviewService implements IReviewService{
       return { success: false, message: "Failed to delete review" };
     }
   }
+
+  async getStudentById(studentId: string): Promise<{ success: boolean; message: string; data?: IStudentReview }> {
+    try {
+      const student = await studentRepo.findById(studentId);
+      if (!student) {
+        return { success: false, message: "Student not found" };
+      }
+      return {
+        success: true,
+        message: "Student retrieved successfully",
+        data: {
+          _id: student._id,
+          name: student.name,
+          profilePicture: student.profilePicture,
+        
+        },
+      };
+    } catch (error) {
+      console.error("Error in student service getStudentById:", error);
+      return { success: false, message: "Failed to fetch student" };
+    }
+  }
 }
 
-export default new ReviewService(reviewRepository)
+export default new ReviewService(reviewRepository, studentRepo)

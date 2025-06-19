@@ -10,7 +10,7 @@ class ReviewRepository implements IReviewRepository {
       userId: savedReview.userId,
       courseId: savedReview.courseId,
       rating: savedReview.rating,
-      comment: savedReview.comment, // Changed from `review` to `comment`
+      comment: savedReview.comment, 
       createdAt: savedReview.createdAt?.toString(),
       updatedAt: savedReview.updatedAt?.toString(),
     };
@@ -24,7 +24,7 @@ class ReviewRepository implements IReviewRepository {
       userId: review.userId,
       courseId: review.courseId,
       rating: review.rating,
-      comment: review.comment, // Changed from `review` to `comment`
+      comment: review.comment,
       createdAt: review.createdAt?.toString(),
       updatedAt: review.updatedAt?.toString(),
     };
@@ -38,7 +38,7 @@ class ReviewRepository implements IReviewRepository {
       userId: review.userId,
       courseId: review.courseId,
       rating: review.rating,
-      comment: review.comment, // Changed from `review` to `comment`
+      comment: review.comment, 
       createdAt: review.createdAt?.toString(),
       updatedAt: review.updatedAt?.toString(),
     };
@@ -51,7 +51,7 @@ class ReviewRepository implements IReviewRepository {
       userId: review.userId,
       courseId: review.courseId,
       rating: review.rating,
-      comment: review.comment, // Changed from `review` to `comment`
+      comment: review.comment, 
       createdAt: review.createdAt?.toString(),
       updatedAt: review.updatedAt?.toString(),
     }));

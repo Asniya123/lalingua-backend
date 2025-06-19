@@ -21,6 +21,7 @@ export interface ICourse{
   createdAt?: Date;
   updatedAt?: Date;
   tutor?: ITutorDisplay;
+  
 }
 
 export interface ITutorDisplay {

@@ -1,5 +1,6 @@
-import { Types } from "mongoose";
+import { ObjectId, Types } from "mongoose";
 import { Request, Response } from "express";
+import { IStudent } from "./IStudent.js";
 
 export interface IReview {
   _id?: string;
@@ -16,7 +17,13 @@ export interface IReviewInput {
   userId: string;
   courseId: string;
   rating: number;
-  review: string;
+  comment: string;
+}
+
+export interface IStudentReview {
+  _id: ObjectId;
+  name: string;
+  profilePicture?: string;
 }
 
 export interface IReviewRepository{
@@ -34,6 +41,7 @@ export interface IReviewService{
   getReviewsByCourse(courseId: string): Promise<{ success: boolean; message: string; data?: IReview[] }>
   updateReview(reviewId: string, updateData: Partial<IReviewInput>): Promise<{ success: boolean; message: string; data?: IReview }>
   deleteReview(reviewId: string): Promise<{ success: boolean; message: string }>
+  getStudentById(studentId: string): Promise<{ success: boolean; message: string; data?: IStudentReview }>
 }
 
 
@@ -43,4 +51,5 @@ export interface IReviewController{
   getReviewsByCourse(req: Request, res: Response): Promise<void>
   updateReview(req: Request, res: Response): Promise<void>
   deleteReview(req: Request, res: Response): Promise<void>
+  getStudentById(req: Request, res: Response): Promise<void>
 }

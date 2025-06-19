@@ -1,13 +1,12 @@
 import { model, Schema } from "mongoose";
-import { IEnrollment } from "../interface/IStudent.js";
-// import { IEnrollment } from "../interface/IEnrollment.js";
+import { IEnrollment } from "../interface/IEnrollment.js";
 
 
 const EnrollmentSchema: Schema = new Schema(
     {
-      userId: {
+      studentId: {
         type: Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Student",
         required: true,
       },
       courseId: {
@@ -15,22 +14,19 @@ const EnrollmentSchema: Schema = new Schema(
         ref: "Course",
         required: true,
       },
-      pricePaid: {
-        type: Number,
-        required: true,
-        min: 0,
+      enrolledAt: {
+        type: Date, 
+        default: Date.now
       },
-      enrolledDate: {
-        type: Date,
-        default: Date.now,
+      completedLessons: [{
+        type: Schema.Types.ObjectId, 
+        ref: "Lessons"
+      }],
+      isCourseCompleted: {
+        type: Boolean,
+        default: false
       },
-      status: {
-        type: String,
-        enum: ["Active", "Cancelled", "Expired"],
-        default: "Active",
-      },
-    },
-    { timestamps: true }
+    }
   );
 
 

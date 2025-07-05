@@ -15,8 +15,9 @@ export default class LessonController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { title, description, videoUrl, courseId, introVideoUrl, syllabus } = req.body;
-                if (!title || !description || !videoUrl || !courseId || !introVideoUrl || !syllabus) {
-                    res.status(400).json({ error: 'All fields are required' });
+                // Check for required fields
+                if (!title || !description || !videoUrl || !courseId || !syllabus) {
+                    res.status(400).json({ error: 'All fields (title, description, videoUrl, courseId, syllabus) are required' });
                     return;
                 }
                 const lesson = yield this.lessonService.addLesson({
@@ -24,8 +25,8 @@ export default class LessonController {
                     description,
                     videoUrl,
                     courseId,
-                    introVideoUrl,
-                    syllabus
+                    introVideoUrl, // Optional, can be undefined
+                    syllabus, // Required object
                 });
                 res.status(201).json({ message: 'Lesson added successfully', lesson });
             }

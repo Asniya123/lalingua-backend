@@ -16,7 +16,7 @@ const ReviewSchema = new Schema({
         min: 1,
         max: 5,
     },
-    review: {
+    comment: {
         type: String,
         required: true,
         trim: true,

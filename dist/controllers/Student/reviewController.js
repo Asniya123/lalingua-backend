@@ -24,7 +24,7 @@ export default class ReviewController {
                     userId,
                     courseId: req.body.courseId,
                     rating: req.body.rating,
-                    review: req.body.review,
+                    comment: req.body.comment,
                 };
                 const result = yield this.reviewService.createReview(reviewInput);
                 res.status(result.success ? 201 : 400).json(result);
@@ -71,7 +71,10 @@ export default class ReviewController {
                     return;
                 }
                 const reviewId = req.params.reviewId;
-                const updateData = req.body;
+                const updateData = {
+                    rating: req.body.rating,
+                    comment: req.body.comment,
+                };
                 const result = yield this.reviewService.updateReview(reviewId, updateData);
                 res.status(result.success ? 200 : 404).json(result);
             }
@@ -96,6 +99,19 @@ export default class ReviewController {
             }
             catch (error) {
                 console.error("Error in deleteReview:", error);
+                res.status(500).json({ success: false, message: "Server error" });
+            }
+        });
+    }
+    getStudentById(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const studentId = req.params.studentId;
+                const result = yield this.reviewService.getStudentById(studentId);
+                res.status(result.success ? 200 : 404).json(result);
+            }
+            catch (error) {
+                console.error("Error in getStudentById controller:", error);
                 res.status(500).json({ success: false, message: "Server error" });
             }
         });

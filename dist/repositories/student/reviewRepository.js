@@ -11,6 +11,7 @@ import reviewModel from "../../models/reviewModel.js";
 class ReviewRepository {
     create(reviewInput) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
             const review = new reviewModel(reviewInput);
             const savedReview = yield review.save();
             return {
@@ -18,14 +19,15 @@ class ReviewRepository {
                 userId: savedReview.userId,
                 courseId: savedReview.courseId,
                 rating: savedReview.rating,
-                review: savedReview.review,
-                createdAt: savedReview.createdAt,
-                updatedAt: savedReview.updatedAt,
+                comment: savedReview.comment,
+                createdAt: (_a = savedReview.createdAt) === null || _a === void 0 ? void 0 : _a.toString(),
+                updatedAt: (_b = savedReview.updatedAt) === null || _b === void 0 ? void 0 : _b.toString(),
             };
         });
     }
     findById(reviewId) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
             const review = yield reviewModel.findById(reviewId).exec();
             if (!review)
                 return null;
@@ -34,14 +36,15 @@ class ReviewRepository {
                 userId: review.userId,
                 courseId: review.courseId,
                 rating: review.rating,
-                review: review.review,
-                createdAt: review.createdAt,
-                updatedAt: review.updatedAt,
+                comment: review.comment,
+                createdAt: (_a = review.createdAt) === null || _a === void 0 ? void 0 : _a.toString(),
+                updatedAt: (_b = review.updatedAt) === null || _b === void 0 ? void 0 : _b.toString(),
             };
         });
     }
     findByUserAndCourse(userId, courseId) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
             const review = yield reviewModel.findOne({ userId, courseId }).exec();
             if (!review)
                 return null;
@@ -50,29 +53,35 @@ class ReviewRepository {
                 userId: review.userId,
                 courseId: review.courseId,
                 rating: review.rating,
-                review: review.review,
-                createdAt: review.createdAt,
-                updatedAt: review.updatedAt,
+                comment: review.comment,
+                createdAt: (_a = review.createdAt) === null || _a === void 0 ? void 0 : _a.toString(),
+                updatedAt: (_b = review.updatedAt) === null || _b === void 0 ? void 0 : _b.toString(),
             };
         });
     }
     findByCourse(courseId) {
         return __awaiter(this, void 0, void 0, function* () {
             const reviews = yield reviewModel.find({ courseId }).exec();
-            return reviews.map((review) => ({
-                _id: review._id.toString(),
-                userId: review.userId,
-                courseId: review.courseId,
-                rating: review.rating,
-                review: review.review,
-                createdAt: review.createdAt,
-                updatedAt: review.updatedAt,
-            }));
+            return reviews.map((review) => {
+                var _a, _b;
+                return ({
+                    _id: review._id.toString(),
+                    userId: review.userId,
+                    courseId: review.courseId,
+                    rating: review.rating,
+                    comment: review.comment,
+                    createdAt: (_a = review.createdAt) === null || _a === void 0 ? void 0 : _a.toString(),
+                    updatedAt: (_b = review.updatedAt) === null || _b === void 0 ? void 0 : _b.toString(),
+                });
+            });
         });
     }
     update(reviewId, updateData) {
         return __awaiter(this, void 0, void 0, function* () {
-            const review = yield reviewModel.findByIdAndUpdate(reviewId, { $set: updateData }, { new: true }).exec();
+            var _a, _b;
+            const review = yield reviewModel
+                .findByIdAndUpdate(reviewId, { $set: updateData }, { new: true })
+                .exec();
             if (!review)
                 return null;
             return {
@@ -80,9 +89,9 @@ class ReviewRepository {
                 userId: review.userId,
                 courseId: review.courseId,
                 rating: review.rating,
-                review: review.review,
-                createdAt: review.createdAt,
-                updatedAt: review.updatedAt,
+                comment: review.comment,
+                createdAt: (_a = review.createdAt) === null || _a === void 0 ? void 0 : _a.toString(),
+                updatedAt: (_b = review.updatedAt) === null || _b === void 0 ? void 0 : _b.toString(),
             };
         });
     }
@@ -93,4 +102,4 @@ class ReviewRepository {
         });
     }
 }
-export default new ReviewRepository;
+export default new ReviewRepository();

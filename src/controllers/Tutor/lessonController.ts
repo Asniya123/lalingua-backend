@@ -10,31 +10,32 @@ export default class LessonController implements ILessonController{
     }
 
     async addLesson(req: Request, res: Response): Promise<void> {
-      try {
-        const { title, description, videoUrl, courseId, introVideoUrl, syllabus} = req.body;
-    
-        if (!title || !description || !videoUrl || !courseId || !introVideoUrl || !syllabus) {
-          res.status(400).json({ error: 'All fields are required' });
-          return;
-        }
-    
-        const lesson = await this.lessonService.addLesson({
-          title,
-          description,
-          videoUrl,
-          courseId,
-          introVideoUrl,
-          syllabus
-        });
-    
-        res.status(201).json({ message: 'Lesson added successfully', lesson });
-      } catch (error) {
-        console.error('Controller error in addLesson:', error);
-        res.status(400).json({
-          error: error instanceof Error ? error.message : 'Failed to add lesson',
-        });
-      }
+  try {
+    const { title, description, videoUrl, courseId, introVideoUrl, syllabus } = req.body;
+
+    // Check for required fields
+    if (!title || !description || !videoUrl || !courseId || !syllabus) {
+      res.status(400).json({ error: 'All fields (title, description, videoUrl, courseId, syllabus) are required' });
+      return;
     }
+
+    const lesson = await this.lessonService.addLesson({
+      title,
+      description,
+      videoUrl,
+      courseId,
+      introVideoUrl, // Optional, can be undefined
+      syllabus, // Required object
+    });
+
+    res.status(201).json({ message: 'Lesson added successfully', lesson });
+  } catch (error) {
+    console.error('Controller error in addLesson:', error);
+    res.status(400).json({
+      error: error instanceof Error ? error.message : 'Failed to add lesson',
+    });
+  }
+}
 
 
     async listLesson(req: Request, res: Response): Promise<void> {

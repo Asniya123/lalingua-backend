@@ -51,7 +51,7 @@ router.delete("/deleteLesson/:lessonId", lessonController.deleteLesson.bind(less
 
 
 //EnrolledStudents
-router.get('/enrolled-students', enrollmentController.getEnrolledStudentsByTutor.bind(enrollmentController))
+router.get('/enrolledStudents', tutorAuthenticate, enrollmentController.listEnrolledStudents.bind(enrollmentController))
 
 
 

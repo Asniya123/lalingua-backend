@@ -8,9 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import reviewRepository from "../../repositories/student/reviewRepository.js";
+import studentRepo from "../../repositories/student/studentRepo.js";
 export class ReviewService {
-    constructor(reviewRepository) {
+    constructor(reviewRepository, studentRepo) {
         this.reviewRepository = reviewRepository;
+        this.studentRepo = studentRepo;
     }
     createReview(reviewInput) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -22,7 +24,7 @@ export class ReviewService {
                 if (reviewInput.rating < 1 || reviewInput.rating > 5) {
                     return { success: false, message: "Rating must be between 1 and 5" };
                 }
-                if (!reviewInput.review.trim()) {
+                if (!reviewInput.comment.trim()) {
                     return { success: false, message: "Review text cannot be empty" };
                 }
                 const review = yield reviewRepository.create(reviewInput);
@@ -67,7 +69,7 @@ export class ReviewService {
                 if (updateData.rating && (updateData.rating < 1 || updateData.rating > 5)) {
                     return { success: false, message: "Rating must be between 1 and 5" };
                 }
-                if (updateData.review && !updateData.review.trim()) {
+                if (updateData.comment && !updateData.comment.trim()) {
                     return { success: false, message: "Review text cannot be empty" };
                 }
                 const review = yield this.reviewRepository.update(reviewId, updateData);
@@ -97,5 +99,28 @@ export class ReviewService {
             }
         });
     }
+    getStudentById(studentId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const student = yield studentRepo.findById(studentId);
+                if (!student) {
+                    return { success: false, message: "Student not found" };
+                }
+                return {
+                    success: true,
+                    message: "Student retrieved successfully",
+                    data: {
+                        _id: student._id,
+                        name: student.name,
+                        profilePicture: student.profilePicture,
+                    },
+                };
+            }
+            catch (error) {
+                console.error("Error in student service getStudentById:", error);
+                return { success: false, message: "Failed to fetch student" };
+            }
+        });
+    }
 }
-export default new ReviewService(reviewRepository);
+export default new ReviewService(reviewRepository, studentRepo);

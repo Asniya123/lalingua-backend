@@ -4,30 +4,29 @@ import { IEnrollment } from "../interface/IEnrollment.js";
 
 const EnrollmentSchema: Schema = new Schema(
     {
-      studentId: {
-        type: Schema.Types.ObjectId,
-        ref: "Student",
-        required: true,
+      name: {
+        type: String,
+        required: true
       },
       courseId: {
         type: Schema.Types.ObjectId,
         ref: "Course",
         required: true,
       },
-      enrolledAt: {
-        type: Date, 
-        default: Date.now
+      tutorId: {
+        type: Schema.Types.ObjectId,
+        ref:'Tutor',
+        required: true
       },
-      completedLessons: [{
-        type: Schema.Types.ObjectId, 
-        ref: "Lessons"
-      }],
-      isCourseCompleted: {
-        type: Boolean,
-        default: false
-      },
-    }
-  );
+      enrolledDate: {
+    type: Date,
+    default: Date.now,
+  },
+  progress: {
+    type: Number,
+    default: 0
+  },
+}, { timestamps: true });
 
 
 const EnrollmentModel = model<IEnrollment>('Enrollment', EnrollmentSchema);

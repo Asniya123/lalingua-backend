@@ -63,50 +63,61 @@ class walletReposiotry {
             }
         });
     }
-    refundWallet(enrolledId, userId, amount, reason) {
+    refundWallet(paymentId, userId, amount, reason) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 if (!mongoose.Types.ObjectId.isValid(userId)) {
                     console.error(`Invalid userId: ${userId}`);
-                    throw new Error("Invalid user ID");
+                    throw new Error('Invalid user ID');
                 }
-                if (!mongoose.Types.ObjectId.isValid(enrolledId)) {
-                    console.error(`Invalid enrolledId: ${enrolledId}`);
-                    throw new Error("Invalid enrollment ID");
+                if (!paymentId || typeof paymentId !== 'string' || paymentId.trim() === '') {
+                    console.error(`Invalid paymentId: ${paymentId}`);
+                    throw new Error('Invalid payment ID');
                 }
-                if (typeof amount !== "number" || amount <= 0) {
+                if (typeof amount !== 'number' || amount <= 0) {
                     console.error(`Invalid amount: ${amount}`);
-                    throw new Error("Invalid refund amount");
+                    throw new Error('Invalid refund amount');
                 }
-                if (!reason || typeof reason !== "string" || reason.trim() === "") {
+                if (!reason || typeof reason !== 'string' || reason.trim() === '') {
                     console.error(`Invalid reason: ${reason}`);
-                    throw new Error("Valid reason is required");
+                    throw new Error('Valid reason is required');
                 }
                 const amountInRupees = amount;
                 const newTransaction = {
-                    enrolledId: enrolledId.trim(),
+                    enrolledId: paymentId.trim(),
                     date: new Date(),
                     amount: amountInRupees,
-                    transactionType: "credit",
+                    transactionType: 'credit',
                     reason: reason.trim(),
                 };
-                console.log(`Repository: Refunding wallet for userId: ${userId}, amount: ${amountInRupees}, reason: ${reason}`);
+                console.log(`Repository: Attempting to refund wallet for userId: ${userId}, amount: ${amountInRupees}, reason: ${reason}`);
+                // Check if wallet exists; if not, create one
+                let wallet = yield WalletModel.findOne({ wallet_user: userId });
+                if (!wallet) {
+                    console.log(`No wallet found for userId: ${userId}. Creating new wallet.`);
+                    wallet = yield WalletModel.create({
+                        wallet_user: userId,
+                        walletBalance: 0,
+                        transaction: [],
+                    });
+                }
+                // Update wallet with refund
                 const updatedWallet = yield WalletModel.findOneAndUpdate({ wallet_user: userId }, {
                     $inc: { walletBalance: amountInRupees },
                     $push: { transaction: newTransaction },
                 }, { new: true });
                 if (!updatedWallet) {
-                    console.error(`Wallet not found for userId: ${userId}`);
-                    throw new Error("Wallet not found");
+                    console.error(`Failed to update wallet for userId: ${userId}`);
+                    throw new Error('Failed to update wallet');
                 }
                 console.log(`Wallet refunded successfully: ${JSON.stringify(updatedWallet, null, 2)}`);
                 return updatedWallet;
             }
             catch (error) {
-                console.error("Repository: Error refunding wallet:", {
+                console.error('Repository: Error refunding wallet:', {
                     message: error instanceof Error ? error.message : String(error),
                     userId,
-                    enrolledId,
+                    paymentId,
                     amount,
                     reason,
                     stack: error instanceof Error ? error.stack : undefined,
@@ -117,18 +128,50 @@ class walletReposiotry {
     }
     addAdminWallet(enrolledId, adminId, amount, reason) {
         return __awaiter(this, void 0, void 0, function* () {
-            const newTransaction = {
-                enrolledId,
-                date: new Date(),
-                amount,
-                transactionType: "credit",
-                reason,
-            };
-            const updatedWallet = yield WalletModel.findOneAndUpdate({ wallet_user: adminId }, {
-                $inc: { walletBalance: amount },
-                $push: { transaction: newTransaction },
-            }, { new: true });
-            return updatedWallet;
+            try {
+                if (!mongoose.Types.ObjectId.isValid(adminId)) {
+                    throw new Error("Invalid admin ID");
+                }
+                const newTransaction = {
+                    enrolledId,
+                    date: new Date(),
+                    amount,
+                    transactionType: "credit",
+                    reason,
+                };
+                return yield WalletModel.findOneAndUpdate({ wallet_user: adminId }, {
+                    $inc: { walletBalance: amount },
+                    $push: { transaction: newTransaction },
+                }, { new: true });
+            }
+            catch (error) {
+                console.error("Repository: Error adding to admin wallet:", error);
+                throw new Error(`Failed to add to admin wallet: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        });
+    }
+    addTutorWallet(enrolledId, tutorId, amount, reason) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(tutorId)) {
+                    throw new Error("Invalid tutor ID");
+                }
+                const newTransaction = {
+                    enrolledId,
+                    date: new Date(),
+                    amount,
+                    transactionType: "credit",
+                    reason,
+                };
+                return yield WalletModel.findOneAndUpdate({ wallet_user: tutorId }, {
+                    $inc: { walletBalance: amount },
+                    $push: { transaction: newTransaction },
+                }, { new: true });
+            }
+            catch (error) {
+                console.error("Repository: Error adding to tutor wallet:", error);
+                throw new Error(`Failed to add to tutor wallet: ${error instanceof Error ? error.message : String(error)}`);
+            }
         });
     }
     debitWallet(enrolledId, userId, amount, reason) {

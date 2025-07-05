@@ -139,22 +139,56 @@ class walletReposiotry implements IWalletRepository{
   }
 
   async addAdminWallet(enrolledId: string, adminId: string, amount: number, reason: string): Promise<IWallet | null> {
-    const newTransaction: Transaction = {
-      enrolledId,
-      date: new Date(), 
-      amount,
-      transactionType: "credit",
-      reason,
-    };
-    const updatedWallet = await WalletModel.findOneAndUpdate( 
-      { wallet_user: adminId },
-      {
-        $inc: { walletBalance: amount },
-        $push: { transaction: newTransaction },
-      },
-      { new: true }
-    );
-    return updatedWallet as unknown as IWallet;
+    try {
+      if (!mongoose.Types.ObjectId.isValid(adminId)) {
+        throw new Error("Invalid admin ID");
+      }
+      const newTransaction: Transaction = {
+        enrolledId,
+        date: new Date(),
+        amount,
+        transactionType: "credit",
+        reason,
+      };
+      return await WalletModel.findOneAndUpdate(
+        { wallet_user: adminId },
+        {
+          $inc: { walletBalance: amount },
+          $push: { transaction: newTransaction },
+        },
+        { new: true }
+      );
+    } catch (error) {
+      console.error("Repository: Error adding to admin wallet:", error);
+      throw new Error(`Failed to add to admin wallet: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+
+  async addTutorWallet(enrolledId: string, tutorId: string, amount: number, reason: string): Promise<IWallet | null> {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(tutorId)) {
+        throw new Error("Invalid tutor ID");
+      }
+      const newTransaction: Transaction = {
+        enrolledId,
+        date: new Date(),
+        amount,
+        transactionType: "credit",
+        reason,
+      };
+      return await WalletModel.findOneAndUpdate(
+        { wallet_user: tutorId },
+        {
+          $inc: { walletBalance: amount },
+          $push: { transaction: newTransaction },
+        },
+        { new: true }
+      );
+    } catch (error) {
+      console.error("Repository: Error adding to tutor wallet:", error);
+      throw new Error(`Failed to add to tutor wallet: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
 

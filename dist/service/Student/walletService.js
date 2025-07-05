@@ -147,5 +147,45 @@ export class WalletService {
             }
         });
     }
+    creditTutorWallet(enrolledId, tutorId, amount, reason) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(tutorId)) {
+                    throw new Error("Invalid tutor ID");
+                }
+                if (typeof amount !== "number" || amount <= 0) {
+                    throw new Error("Invalid amount");
+                }
+                if (!enrolledId || !reason) {
+                    throw new Error("Enrolled ID and reason are required");
+                }
+                return yield this.walletRepository.addTutorWallet(enrolledId, tutorId, amount, reason);
+            }
+            catch (error) {
+                console.error("Service: Error in creditTutorWallet:", error);
+                throw new Error(`Failed to credit tutor wallet: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        });
+    }
+    creditAdminWallet(enrolledId, adminId, amount, reason) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!mongoose.Types.ObjectId.isValid(adminId)) {
+                    throw new Error("Invalid admin ID");
+                }
+                if (typeof amount !== "number" || amount <= 0) {
+                    throw new Error("Invalid amount");
+                }
+                if (!enrolledId || !reason) {
+                    throw new Error("Enrolled ID and reason are required");
+                }
+                return yield this.walletRepository.addAdminWallet(enrolledId, adminId, amount, reason);
+            }
+            catch (error) {
+                console.error("Service: Error in creditAdminWallet:", error);
+                throw new Error(`Failed to credit admin wallet: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        });
+    }
 }
 export default new WalletService(walletRepository);

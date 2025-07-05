@@ -14,14 +14,13 @@ class LessonService implements ILessonService{
     !lessonData.description ||
     !lessonData.videoUrl ||
     !lessonData.courseId ||
-    !lessonData.introVideoUrl ||
     !lessonData.syllabus
   ) {
-    throw new Error('All fields are required');
+    throw new Error('All fields (title, description, videoUrl, courseId, syllabus) are required');
   }
 
   try {
-    const existingLessons = await this.lessonRepository.getLessonsByCourseId(lessonData.courseId.toString()); 
+    const existingLessons = await this.lessonRepository.getLessonsByCourseId(lessonData.courseId.toString());
 
     console.log(
       `Existing lessons for courseId "${lessonData.courseId}":`,

@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import categoryRepository from "../../repositories/admin/categoryRepository.js";
 import courseRepository from "../../repositories/student/courseRepository.js";
 import studentRepo from "../../repositories/student/studentRepo.js";
@@ -117,10 +117,17 @@ export class CourseService {
                 if (!course) {
                     throw new Error("Course not found");
                 }
+                if (!course.tutorId || typeof course.tutorId !== "string") {
+                    throw new Error("Tutor ID not found in course");
+                }
                 const enrollmentData = {
                     courseId: new mongoose.Types.ObjectId(courseId),
-                    paymentId: paymentDetails.paymentMethod === 'razorpay' ? paymentDetails.razorpay_payment_id : paymentDetails.walletTransactionId || `wallet_${Date.now()}`,
-                    orderId: paymentDetails.paymentMethod === 'razorpay' ? paymentDetails.razorpay_order_id : `wallet_order_${Date.now()}`,
+                    paymentId: paymentDetails.paymentMethod === "razorpay"
+                        ? paymentDetails.razorpay_payment_id
+                        : paymentDetails.walletTransactionId || `wallet_${Date.now()}`,
+                    orderId: paymentDetails.paymentMethod === "razorpay"
+                        ? paymentDetails.razorpay_order_id
+                        : `wallet_order_${Date.now()}`,
                     amount: course.regularPrice,
                     currency: "INR",
                     status: "completed",
@@ -132,6 +139,11 @@ export class CourseService {
                     throw new Error("Student not found");
                 }
                 yield this.courseRepository.incrementBuyCount(courseId);
+                return {
+                    enrollmentId: enrollmentData.paymentId,
+                    coursePrice: course.regularPrice,
+                    tutorId: course.tutorId,
+                };
             }
             catch (error) {
                 console.error("Service error enrolling course:", error);
@@ -150,29 +162,32 @@ export class CourseService {
                     : [];
                 const courses = yield this.courseRepository.findByIds(courseIds);
                 const enrolledCourses = yield Promise.all(courses.map((course) => __awaiter(this, void 0, void 0, function* () {
-                    var _a, _b;
+                    var _a, _b, _c;
                     const enrollment = (_a = student.enrollments) === null || _a === void 0 ? void 0 : _a.find((enrollment) => enrollment.courseId.toString() === course._id.toString());
-                    // Fetch review for this user and course
                     const review = yield this.reviewRepository.findByUserAndCourse(userId, course._id.toString());
+                    const lessons = course.lessons || [];
+                    const totalLessons = lessons.length;
+                    const completedLessonsData = yield this.courseRepository.findCompletionsByUserAndCourse(userId, course._id.toString());
+                    const completedLessons = completedLessonsData.length;
+                    // Calculate completion status based on completed lessons
+                    const isCompleted = totalLessons > 0 ? completedLessons === totalLessons : false;
+                    const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
                     return {
                         _id: course._id,
                         courseTitle: course.courseTitle || "Untitled Course",
-                        imageUrl: course.imageUrl,
-                        category: course.category,
-                        language: course.language,
-                        tutorId: course.tutorId,
                         description: course.description,
-                        regularPrice: course.regularPrice,
-                        buyCount: course.buyCount,
-                        isBlock: course.isBlock,
-                        lessons: course.lessons,
-                        createdAt: course.createdAt,
-                        updatedAt: course.updatedAt,
-                        tutor: course.tutor,
+                        imageUrl: course.imageUrl,
                         pricePaid: (enrollment === null || enrollment === void 0 ? void 0 : enrollment.amount) || 0,
-                        enrolledDate: ((_b = enrollment === null || enrollment === void 0 ? void 0 : enrollment.enrolledAt) === null || _b === void 0 ? void 0 : _b.toISOString()) || undefined,
-                        status: (enrollment === null || enrollment === void 0 ? void 0 : enrollment.status) || "Unknown",
-                        review: review || undefined, // Include review if it exists
+                        enrolledAt: ((_b = enrollment === null || enrollment === void 0 ? void 0 : enrollment.enrolledAt) === null || _b === void 0 ? void 0 : _b.toString()) || new Date().toString(),
+                        enrolledDate: ((_c = enrollment === null || enrollment === void 0 ? void 0 : enrollment.enrolledAt) === null || _c === void 0 ? void 0 : _c.toString()) || new Date().toString(),
+                        status: (enrollment === null || enrollment === void 0 ? void 0 : enrollment.status) || "Active",
+                        tutor: course.tutor,
+                        review: review || undefined,
+                        completedLessons: completedLessons,
+                        totalLessons: totalLessons,
+                        isCompleted: isCompleted,
+                        completedAt: (enrollment === null || enrollment === void 0 ? void 0 : enrollment.completedAt) || undefined,
+                        progress: progress,
                     };
                 })));
                 return enrolledCourses;
@@ -188,50 +203,55 @@ export class CourseService {
             try {
                 if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(courseId)) {
                     console.error(`Invalid ObjectId: userId=${userId}, courseId=${courseId}`);
-                    throw new Error("Invalid user or course ID");
+                    throw new Error('Invalid user or course ID');
                 }
                 const student = yield this.studentRepository.findById(userId);
                 if (!student) {
                     console.error(`Student not found for userId: ${userId}`);
-                    throw new Error("Student not found");
+                    throw new Error('Student not found');
                 }
                 if (!student.enrollments || student.enrollments.length === 0) {
                     console.error(`No enrollments found for student: ${userId}`);
-                    throw new Error("No enrollments found for this student");
+                    throw new Error('No enrollments found for this student');
                 }
-                const enrollment = student.enrollments.find((e) => e.courseId.toString() === courseId);
+                const enrollment = student.enrollments.find(e => e.courseId.toString() === courseId);
                 if (!enrollment) {
                     console.error(`Enrollment not found for courseId: ${courseId}`);
-                    throw new Error("Enrollment not found for this course");
+                    throw new Error('Enrollment not found for this course');
+                }
+                if (enrollment.isCompleted) {
+                    console.error(`Course is completed for courseId: ${courseId}`);
+                    throw new Error('Cannot cancel a completed course');
                 }
                 const enrolledAt = new Date(enrollment.enrolledAt);
                 if (isNaN(enrolledAt.getTime())) {
                     console.error(`Invalid enrolledAt date for enrollment: ${courseId}`);
-                    throw new Error("Invalid enrollment date");
+                    throw new Error('Invalid enrollment date');
                 }
                 const now = new Date();
                 const daysSinceEnrollment = (now.getTime() - enrolledAt.getTime()) / (1000 * 60 * 60 * 24);
                 if (daysSinceEnrollment > 7) {
                     console.error(`Refund period expired for enrollment: ${courseId}`);
-                    throw new Error("Refund period has expired (7 days)");
+                    throw new Error('Refund period has expired (7 days)');
                 }
                 const refundAmount = enrollment.amount || 0;
                 if (refundAmount <= 0) {
                     console.error(`Invalid refund amount for enrollment: ${courseId}`);
-                    throw new Error("No payment amount found for this enrollment");
+                    throw new Error('No payment amount found for this enrollment');
                 }
                 const reason = `Refund for canceling course ${courseId}`;
-                const wallet = yield this.walletRepository.refundWallet(enrollment.paymentId, userId, refundAmount, reason);
+                const transactionId = enrollment.paymentId || courseId;
+                const wallet = yield this.walletRepository.refundWallet(transactionId, userId, refundAmount, reason);
                 if (!wallet) {
                     console.error(`Wallet refund failed for userId: ${userId}`);
-                    throw new Error("Failed to process refund to wallet");
+                    throw new Error('Failed to process refund to wallet');
                 }
                 const updatedStudent = yield this.studentRepository.update(userId, {
-                    $pull: { enrollments: { courseId } },
+                    $pull: { enrollments: { courseId: new Types.ObjectId(courseId) } },
                 });
                 if (!updatedStudent) {
                     console.error(`Failed to update student enrollments for userId: ${userId}`);
-                    throw new Error("Failed to update enrollment status");
+                    throw new Error('Failed to update enrollment status');
                 }
                 console.log(`Course canceled successfully for userId: ${userId}, courseId: ${courseId}, refundAmount: ${refundAmount}`);
                 return {
@@ -241,7 +261,7 @@ export class CourseService {
                 };
             }
             catch (error) {
-                console.error("Service: Error in cancelEnrollment:", {
+                console.error('Service: Error in cancelEnrollment:', {
                     message: error.message,
                     userId,
                     courseId,
@@ -257,7 +277,7 @@ export class CourseService {
                 const lessons = yield this.courseRepository.findByCourseId(courseId);
                 return {
                     success: true,
-                    message: 'Lesson retrieved successfully',
+                    message: "Lesson retrieved successfully",
                     lessons,
                 };
             }
@@ -268,6 +288,76 @@ export class CourseService {
                 else {
                     throw new Error("Failed to list lessons: Unknown error occurred");
                 }
+            }
+        });
+    }
+    completeLesson(userId, courseId, lessonId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const existingCompletion = yield this.courseRepository.findCompletionsByUserAndCourse(userId, courseId);
+                if (existingCompletion.some(completion => completion.lessonId.toString() === lessonId)) {
+                    return { success: false, message: 'Lesson already completed' };
+                }
+                yield this.courseRepository.createCompletion(userId, courseId, lessonId);
+                const completedLessons = yield this.getCompletedLessons(userId, courseId);
+                console.log(`Completed lessons count after marking lesson ${lessonId}: ${completedLessons.length}`);
+                yield this.courseRepository.updateEnrollmentCompletedLessons(userId, courseId, completedLessons.length);
+                console.log(`Updated enrollment for user ${userId}, course ${courseId} with ${completedLessons.length} completed lessons`);
+                const totalLessons = yield this.courseRepository.getTotalLessonsCount(courseId);
+                console.log(`Total lessons for course ${courseId}: ${totalLessons}`);
+                if (totalLessons > 0 && completedLessons.length === totalLessons) {
+                    yield this.courseRepository.markCourseCompleted(userId, courseId, new Date());
+                    console.log(`Course ${courseId} marked as completed for user ${userId}`);
+                }
+                return { success: true };
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+                console.error(`Failed to complete lesson: ${errorMessage}`);
+                throw new Error(`Failed to complete lesson: ${errorMessage}`);
+            }
+        });
+    }
+    getCompletedLessons(userId, courseId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const completions = yield this.courseRepository.findCompletionsByUserAndCourse(userId, courseId);
+                return completions.map(completion => completion.lessonId.toString());
+            }
+            catch (error) {
+                throw new Error(`Failed to fetch completed lessons: ${error.message || 'Unknown error'}`);
+            }
+        });
+    }
+    markCourseCompleted(userId, courseId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                console.log(`Marking course as completed: userId=${userId}, courseId=${courseId}`);
+                const course = yield this.courseRepository.findByCourseId(courseId);
+                if (!course) {
+                    console.log(`Course not found: ${courseId}`);
+                    return { success: false, message: "Course not found" };
+                }
+                const totalLessons = yield this.courseRepository.getTotalLessonsCount(courseId);
+                console.log(`Total lessons for course ${courseId}: ${totalLessons}`);
+                // Prevent marking courses with 0 lessons as completed automatically
+                if (totalLessons === 0) {
+                    console.log(`Course ${courseId} has no lessons; cannot mark as completed`);
+                    return { success: false, message: "Cannot mark a course with no lessons as completed" };
+                }
+                const completedLessons = yield this.getCompletedLessons(userId, courseId);
+                console.log(`Completed lessons: ${completedLessons.length}, Total lessons: ${totalLessons}`);
+                if (completedLessons.length !== totalLessons) {
+                    return { success: false, message: "Not all lessons are completed" };
+                }
+                yield this.courseRepository.markCourseCompleted(userId, courseId, new Date());
+                console.log(`Course ${courseId} marked as completed for user ${userId}`);
+                return { success: true };
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+                console.error(`Failed to mark course as completed: ${errorMessage}`);
+                throw new Error(`Failed to mark course as completed: ${errorMessage}`);
             }
         });
     }

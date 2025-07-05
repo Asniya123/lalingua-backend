@@ -26,7 +26,8 @@ router.put('/editProfile', authenticate, studentController.updateStudentProfile.
 router.put('/uploadPicture', authenticate, studentController.uploadProfilePicture.bind(studentController));
 router.post('/changePassword', authenticate, studentController.changePassword.bind(studentController));
 //Course
-const courseController = new CourseController(courseService);
+const typedCourseService = courseService;
+const courseController = new CourseController(typedCourseService, walletService);
 router.get('/courses', authenticate, courseController.getCourses.bind(courseController));
 router.get('/courseDetail/:courseId', authenticate, courseController.getCourseById.bind(courseController));
 //Language
@@ -37,6 +38,9 @@ router.post('/enrollCourse', authenticate, courseController.enrollCourse.bind(co
 //CourseEnrollement
 router.get('/enrollments/:userId', authenticate, courseController.getEnrolledCourses.bind(courseController));
 router.get('/listLessons/:courseId', authenticate, courseController.listLessons.bind(courseController));
+router.get('/:courseId/completed-lessons', authenticate, courseController.getCompletedLessons.bind(courseController));
+router.post('/:courseId/lessons/:lessonId/complete', authenticate, courseController.completeLesson.bind(courseController));
+router.post('/:courseId/complete', authenticate, courseController.markCourseCompleted.bind(courseController));
 router.delete("/enrollments/:userId/:courseId", authenticate, courseController.cancelEnrollment.bind(courseController));
 //Tutor
 const tutorController = new TutorController(tutorService);
@@ -52,4 +56,7 @@ router.get("/user/:userId", authenticate, notificationController.getUserNotifica
 //Review 
 const reviewController = new ReviewController(reviewService);
 router.post('/course-review', authenticate, reviewController.createReview.bind(reviewController));
+router.get('/listReviews/:courseId', authenticate, reviewController.getReviewsByCourse.bind(reviewController));
+router.put('/course-review/:reviewId', authenticate, reviewController.updateReview.bind(reviewController));
+router.get('/students/:studentId', authenticate, reviewController.getStudentById.bind(reviewController));
 export default router;

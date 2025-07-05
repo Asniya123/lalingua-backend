@@ -1,6 +1,3 @@
-
-import { Types } from "mongoose";
-
 import { Request, Response } from "express";
 
 export interface INotification {

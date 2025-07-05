@@ -309,7 +309,7 @@ class CourseRepository implements ISCourseRepository {
       });
       return await completion.save();
     } catch (error: any) {
-      // Handle duplicate key error (lesson already completed)
+     
       if (error.code === 11000) {
         throw new Error('Lesson already completed');
       }

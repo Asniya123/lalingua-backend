@@ -1,24 +1,44 @@
-import { IEnrolledStudent, IEnrollmentRepository, IEnrollmentService } from "../../interface/IEnrollment.js";
+import {
+  
+  ICourseWithEnrollments,
+ 
+  IEnrolledStudentsResponse,
+ 
+  IEnrollmentRepository,
+  IEnrollmentService,
+} from "../../interface/IEnrollment.js";
+
 import enrolledStudents from "../../repositories/tutor/enrolledStudentsRepository.js";
 
-class EnrollmentService implements IEnrollmentService{
-    private enrollmentRepository: IEnrollmentRepository
+class EnrollmentService implements IEnrollmentService {
+  private enrollmentRepository: IEnrollmentRepository;
 
-    constructor(enrollmentRepository: IEnrollmentRepository){
-        this.enrollmentRepository = enrollmentRepository
+  constructor(enrollmentRepository: IEnrollmentRepository) {
+    this.enrollmentRepository = enrollmentRepository;
+  }
+
+  async listEnrolledStudents(tutorId: string, courseId?: string): Promise<IEnrolledStudentsResponse> {
+  try {
+    if (!tutorId) {
+      throw new Error('Tutor ID is required');
     }
 
-     async getEnrolledStudentsByTutor(tutorId: string): Promise<IEnrolledStudent[]> {
-    try {
-      console.log(`Service: Fetching enrolled students for tutorId: ${tutorId}`);
-      const students = await this.enrollmentRepository.getEnrolledStudentsByTutor(tutorId);
-      console.log(`Service: Returned ${students.length} enrolled students`);
-      return students;
-    } catch (error) {
-      console.error("Service error:", error);
-      throw error;
-    }
+    console.log(`Service: Fetching enrolled students for tutor: ${tutorId}, course: ${courseId || 'all'}`);
+
+    const students = await this.enrollmentRepository.findEnrolledStudents(tutorId, courseId);
+
+    console.log(`Service: Found ${students.length} enrolled students`, JSON.stringify(students, null, 2));
+    return {
+      success: true,
+      message: `Successfully retrieved ${students.length} enrolled students`,
+      students,
+    };
+  } catch (error: any) {
+    console.error('Service: Error in listEnrolledStudents:', error);
+    throw new Error(error.message || 'Failed to fetch enrolled students');
   }
 }
 
-export default new EnrollmentService(enrolledStudents)
+}
+
+export default new EnrollmentService(enrolledStudents);

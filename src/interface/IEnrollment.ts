@@ -1,58 +1,57 @@
 import { Types } from "mongoose";
 import { Request, Response } from 'express';
+import { IReview } from "./IReview.js";
 
-export interface IStudentDisplay {
-  _id: string;
-  name: string;
-  profilePicture?: string;
-}
 
-export interface ICourseDisplay {
-  _id: string;
-  courseTitle: string;
+
+
+export interface IEnrollment {
+  name: string
+  courseId : Types.ObjectId | string
+  tutorId : Types.ObjectId | string
+  enrolledDate : Date | string
+  progress: number
 }
 
 export interface IEnrolledStudent {
-  student: IStudentDisplay;
-  course: ICourseDisplay
-  review?: {
-    rating: number;
-    comment?: string;
-  };
-  progress: number; 
-}
-
-export interface IEnrollment {
-  _id?: Types.ObjectId;
-  studentId: Types.ObjectId | IStudentDisplay;
-  courseId: Types.ObjectId | ICourseDisplay;
-  enrolledAt?: Date;
-  completedLessons?: Types.ObjectId[] | string[];
-  isCourseCompleted?: boolean;
-}
-
-export interface StudentDocument extends Document {
-  _id: Types.ObjectId;
+  id: string;
   name: string;
-  profilePicture?: string;
+  courseId?: string;
+  enrolledDate: string;
+  progress: number;
+  review?: IReview;
+  totalRevenue?: number;
 }
 
-export interface CourseDocument extends Document {
-  _id: Types.ObjectId;
+export interface IEnrolledStudentsResponse {
+  success: boolean;
+  message: string;
+  students: IEnrolledStudent[];
+}
+
+
+export interface ICourseWithEnrollments {
+  _id: string;
   courseTitle: string;
+  description?: string;
+  regularPrice: number;
+  imageUrl?: string;
+  enrolledStudents: IEnrolledStudent[];
+  reviews: IReview[];
+  studentsWithReviews?: number;
+  
 }
 
 
-export interface IEnrollmentRepository{
-    getEnrolledStudentsByTutor(tutorId: string): Promise<IEnrolledStudent[]>;
+export interface IEnrollmentRepository {
+  findEnrolledStudents(tutorId: string, courseId?: string): Promise<IEnrolledStudent[]>
 }
 
 
-export interface IEnrollmentService{
-    getEnrolledStudentsByTutor(tutorId: string): Promise<IEnrolledStudent[]>
+export interface IEnrollmentService {
+  listEnrolledStudents(tutorId: string, courseId?: string): Promise<IEnrolledStudentsResponse>
 }
 
-
-export interface IEnrollmentController{
-    getEnrolledStudentsByTutor(req: Request, res: Response): Promise<void>
+export interface IEnrollmentController {
+  listEnrolledStudents(req: Request, res: Response): Promise<void>
 }

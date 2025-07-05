@@ -1,9 +1,8 @@
 import { model, Schema } from "mongoose";
-// import { IEnrollment } from "../interface/IEnrollment.js";
 const EnrollmentSchema = new Schema({
-    userId: {
+    studentId: {
         type: Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Student",
         required: true,
     },
     courseId: {
@@ -11,20 +10,18 @@ const EnrollmentSchema = new Schema({
         ref: "Course",
         required: true,
     },
-    pricePaid: {
-        type: Number,
-        required: true,
-        min: 0,
-    },
-    enrolledDate: {
+    enrolledAt: {
         type: Date,
-        default: Date.now,
+        default: Date.now
     },
-    status: {
-        type: String,
-        enum: ["Active", "Cancelled", "Expired"],
-        default: "Active",
+    completedLessons: [{
+            type: Schema.Types.ObjectId,
+            ref: "Lessons"
+        }],
+    isCourseCompleted: {
+        type: Boolean,
+        default: false
     },
-}, { timestamps: true });
+});
 const EnrollmentModel = model('Enrollment', EnrollmentSchema);
 export default EnrollmentModel;

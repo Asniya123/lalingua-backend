@@ -3,10 +3,9 @@ import studentRepo from "../../repositories/student/studentRepo.js";
 import { sendMail } from "../../utils/sendMail.js";
 import bcrypt from "bcrypt";
 import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils.js";
-import { comparePassword, hashPassword } from "../../utils/passwordUtil.js";
+import {  hashPassword } from "../../utils/passwordUtil.js";
 import { ILanguage, ILanguageRepository } from "../../interface/ILanguage.js";
 import languageRepository from "../../repositories/admin/languageRepository.js";
-
 
 
 

@@ -15,4 +15,6 @@ router.get('/chat/room/:receiverId/:senderId', authenticate, chatController.getR
 router.get('/chat/room-message/:roomId/:userId', authenticate, chatController.getRoomMessage.bind(chatController))
 
 
+
+
 export default router

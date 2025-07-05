@@ -1,100 +1,180 @@
 import { Types } from "mongoose";
-import { CourseDocument, IEnrolledStudent, IEnrollmentRepository, StudentDocument } from "../../interface/IEnrollment.js";
-import CourseModel from "../../models/courseModel.js";
-import EnrollmentModel from "../../models/enrollmentModel.js";
+import {
+  IEnrolledStudent,
+  IEnrollmentRepository,
+} from "../../interface/IEnrollment.js";
+import userModel from "../../models/studentModel.js";
+import courseModel from "../../models/courseModel.js";
 import reviewModel from "../../models/reviewModel.js";
 
-class EnrollmentRepository implements IEnrollmentRepository{
-   async getEnrolledStudentsByTutor(tutorId: string): Promise<IEnrolledStudent[]> {
+class EnrollmentRepository implements IEnrollmentRepository {
+  async findEnrolledStudents(
+    tutorId: string,
+    courseId?: string
+  ): Promise<IEnrolledStudent[]> {
     try {
-      console.log(`Fetching courses for tutorId: ${tutorId}`);
-      const courses = await CourseModel.find({ tutorId: new Types.ObjectId(tutorId) }).select("_id courseTitle");
-      console.log(`Found ${courses.length} courses`);
+      if (!tutorId) {
+        throw new Error("Tutor ID is required");
+      }
 
-      if (!courses.length) {
-        console.log("No courses found for this tutor");
+      console.log(
+        `Repository: Finding enrolled students for tutor: ${tutorId}, course: ${
+          courseId || "all"
+        } at ${new Date().toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+        })}`
+      );
+
+      // Fetch courses for the tutor
+      const tutorCourses = await courseModel
+        .find({ tutorId: new Types.ObjectId(tutorId) })
+        .select("_id regularPrice")
+        .lean();
+
+      const courseIds = tutorCourses.map((course) => course._id);
+
+      if (courseIds.length === 0) {
+        console.log("Repository: No courses found for this tutor");
         return [];
       }
 
-      const courseIds = courses.map((course) => course._id);
-      console.log(`Course IDs: ${courseIds}`);
+      // Prepare query for enrolled students
+      const enrollmentQuery = courseId
+        ? { "enrollments.courseId": new Types.ObjectId(courseId) }
+        : { "enrollments.courseId": { $in: courseIds } };
 
-      const enrollments = await EnrollmentModel.find({ courseId: { $in: courseIds } })
-        .populate<{ studentId: StudentDocument }>({
-          path: "studentId",
-          select: "_id name profilePicture",
-        })
-        .populate<{ courseId: CourseDocument }>({
-          path: "courseId",
-          select: "_id courseTitle",
-        })
+      console.log(
+        `Repository: Querying students with:`,
+        JSON.stringify(enrollmentQuery, null, 2)
+      );
+
+      // Fetch students with enrollments
+      const students = await userModel
+        .find(enrollmentQuery)
+        .select("_id name email enrollments")
         .lean();
-      console.log(`Found ${enrollments.length} enrollments`);
 
-      const [reviews, lessonCounts] = await Promise.all([
-        reviewModel.find({
-          courseId: { $in: courseIds },
-          userId: { $in: enrollments.map((e) => e.studentId._id) },
-        }).lean(),
-        CourseModel.aggregate([
-          { $match: { _id: { $in: courseIds } } },
-          {
-            $lookup: {
-              from: "lessons",
-              localField: "_id",
-              foreignField: "courseId",
-              as: "lessons",
-            },
-          },
-          {
-            $project: {
-              _id: 1,
-              lessonCount: { $size: "$lessons" },
-            },
-          },
-        ]),
-      ]);
-      console.log(`Found ${reviews.length} reviews and ${lessonCounts.length} lesson counts`);
+      console.log(`Repository: Found ${students.length} students`);
 
-      const reviewMap = new Map(reviews.map((review) => [`${review.courseId}_${review.userId}`, review]));
-      const lessonCountMap = new Map(lessonCounts.map((lc) => [lc._id.toString(), lc.lessonCount]));
+      if (students.length === 0) {
+        console.log(
+          "Repository: No enrolled students found for this tutor's courses"
+        );
+        return [];
+      }
 
-      const enrolledStudents: IEnrolledStudent[] = enrollments.map((enrollment) => {
-        const courseIdStr = enrollment.courseId._id.toString();
-        const lessonCount = lessonCountMap.get(courseIdStr) || 1;
-        const completedLessonsCount = enrollment.completedLessons?.length || 0;
-        const progress = Math.round((completedLessonsCount / lessonCount) * 100);
+      const reviewQuery = courseId
+        ? { courseId: new Types.ObjectId(courseId) }
+        : { courseId: { $in: courseIds } };
+      const reviews = await reviewModel
+        .find(reviewQuery)
+        .select("_id courseId userId rating comment createdAt updatedAt")
+        .lean();
 
-        const reviewKey = `${enrollment.courseId._id}_${enrollment.studentId._id}`;
-        const review = reviewMap.get(reviewKey);
+      console.log(`Repository: Found ${reviews.length} reviews`);
 
-        return {
-          student: {
-            _id: enrollment.studentId._id.toString(),
-            name: enrollment.studentId.name || "Unknown Student",
-            profilePicture: enrollment.studentId.profilePicture,
-          },
-          course: {
-            _id: enrollment.courseId._id.toString(),
-            courseTitle: enrollment.courseId.courseTitle,
-          },
-          review: review
-            ? {
-                rating: review.rating,
-                comment: review.comment,
-              }
-            : undefined,
-          progress,
-        };
+      const reviewMap = new Map<
+        string,
+        {
+          rating: number;
+          comment: string;
+          createdAt?: string;
+          updatedAt?: string;
+        }[]
+      >();
+      reviews.forEach((review) => {
+        const key = `${review.courseId.toString()}-${review.userId.toString()}`;
+        if (!reviewMap.has(key)) {
+          reviewMap.set(key, []);
+        }
+        reviewMap.get(key)!.push({
+          rating: review.rating,
+          comment: review.comment || "",
+          createdAt: review.createdAt ? review.createdAt.toString() : undefined,
+          updatedAt: review.updatedAt ? review.updatedAt.toString() : undefined,
+        });
       });
 
-      console.log(`Returning ${enrolledStudents.length} enrolled students`);
+      const enrolledStudents: IEnrolledStudent[] = [];
+      const courseRevenueMap = new Map<string, number>();
+
+      students.forEach((student: any) => {
+        if (student.enrollments && Array.isArray(student.enrollments)) {
+          student.enrollments.forEach((enrollment: any) => {
+            const enrollmentCourseId = enrollment.courseId?.toString();
+            const courseMatches = !courseId || enrollmentCourseId === courseId;
+
+            if (
+              courseMatches &&
+              courseIds.some((id) => id.toString() === enrollmentCourseId)
+            ) {
+              const course = tutorCourses.find(
+                (c) => c._id.toString() === enrollmentCourseId
+              );
+              const regularPrice = course?.regularPrice || 0;
+              const revenuePerEnrollment = regularPrice; // Adjust based on your pricing model
+              courseRevenueMap.set(
+                enrollmentCourseId,
+                (courseRevenueMap.get(enrollmentCourseId) || 0) +
+                  revenuePerEnrollment
+              );
+
+              // Get reviews for this student and course
+              const studentReviews =
+                reviewMap.get(
+                  `${enrollmentCourseId}-${student._id.toString()}`
+                ) || [];
+              const latestReview =
+                studentReviews.length > 0 ? studentReviews[0] : null;
+
+              enrolledStudents.push({
+                id: student._id.toString(),
+                name: student.name || "Unknown Student",
+                courseId: enrollmentCourseId,
+                enrolledDate: enrollment.enrolledAt
+                  ? new Date(enrollment.enrolledAt).toISOString()
+                  : new Date().toISOString(),
+                progress:
+                  typeof enrollment.progress === "number"
+                    ? enrollment.progress
+                    : 0,
+                totalRevenue: revenuePerEnrollment,
+                review: latestReview
+                  ? {
+                      _id: `review-${student._id}-${enrollmentCourseId}`,
+                      courseId: enrollmentCourseId,
+                      userId: student._id.toString(),
+                      rating: latestReview.rating,
+                      comment: latestReview.comment,
+                      createdAt: latestReview.createdAt, // Already a string
+                      updatedAt: latestReview.updatedAt, // Already a string
+                    }
+                  : undefined,
+              });
+
+              console.log(`Repository: Added enrolled student:`, {
+                id: student._id.toString(),
+                name: student.name,
+                courseId: enrollmentCourseId,
+                revenue: revenuePerEnrollment,
+                hasReview: !!latestReview,
+              });
+            }
+          });
+        }
+      });
+
+      console.log(
+        `Repository: Final result - Returning ${enrolledStudents.length} enrolled students`
+      );
       return enrolledStudents;
-    } catch (error) {
-      console.error("Error fetching enrolled students:", error);
-      throw new Error(`Database error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } catch (error: any) {
+      console.error("Repository: Error in findEnrolledStudents:", error);
+      throw new Error(
+        `Failed to fetch enrolled students: ${error.message || error}`
+      );
     }
   }
 }
 
-export default new EnrollmentRepository
+export default new EnrollmentRepository();

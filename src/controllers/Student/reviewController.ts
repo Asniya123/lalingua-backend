@@ -1,5 +1,4 @@
 import { IReviewController, IReviewInput, IReviewService } from "../../interface/IReview.js";
-import { ReviewService } from "../../service/Student/reviewService.js";
 import { Request, Response } from "express";
 
 export default class ReviewController implements IReviewController {
@@ -98,4 +97,5 @@ export default class ReviewController implements IReviewController {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
+    
 }

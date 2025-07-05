@@ -41,6 +41,17 @@ export default class SocketController {
             this._tutorSocketMap.get(userId) ||
             this._adminSocketMap.get(userId));
     }
+    emitOnlineUsers() {
+        const onlineUsers = [
+            ...Array.from(this._userSocketMap.keys()),
+            ...Array.from(this._tutorSocketMap.keys()),
+            ...Array.from(this._adminSocketMap.keys()),
+        ];
+        console.log("Emitting getOnlineUsers:", JSON.stringify(onlineUsers, null, 2));
+        this._io.to("user-room").emit(SocketEvent.GetOnlineUsers, onlineUsers);
+        this._io.to("tutor-room").emit(SocketEvent.GetOnlineUsers, onlineUsers);
+        this._io.to("admin-room").emit(SocketEvent.GetOnlineUsers, onlineUsers);
+    }
     onConnection(socket) {
         console.log(`Client connected: ${socket.handshake.query.userId} with socket ID: ${socket.id}`);
         const userId = socket.handshake.query.userId;
@@ -68,34 +79,29 @@ export default class SocketController {
                 socket.disconnect();
                 return;
         }
-        socket.emit(SocketEvent.GetOnlineUsers, Array.from(this._userSocketMap.keys()));
-        this._io.to("user-room").emit(SocketEvent.GetOnlineUsers, Array.from(this._userSocketMap.keys()));
-        console.log("Current socket maps:", {
-            users: Array.from(this._userSocketMap.keys()),
-            tutors: Array.from(this._tutorSocketMap.keys()),
-            admins: Array.from(this._adminSocketMap.keys()),
-        });
+        // Emit online users to all rooms
+        this.emitOnlineUsers();
         socket.on("register-user", (data) => {
             console.log(`Registering user: ${data.userId} as ${data.role} with socket ID: ${socket.id}`);
             if (data.userId && data.role) {
                 switch (data.role) {
                     case "user":
                         this._userSocketMap.set(data.userId, socket.id);
+                        socket.join("user-room");
                         break;
                     case "tutor":
                         this._tutorSocketMap.set(data.userId, socket.id);
+                        socket.join("tutor-room");
                         break;
                     case "admin":
                         this._adminSocketMap.set(data.userId, socket.id);
+                        socket.join("admin-room");
                         break;
                     default:
                         console.error(`Invalid role in register-user: ${data.role}`);
                 }
-                console.log(`Updated socket maps:`, {
-                    users: Array.from(this._userSocketMap.keys()),
-                    tutors: Array.from(this._tutorSocketMap.keys()),
-                    admins: Array.from(this._adminSocketMap.keys()),
-                });
+                // Emit online users after registration
+                this.emitOnlineUsers();
             }
         });
         socket.on(SocketEvent.JoinedRoom, (roomId) => __awaiter(this, void 0, void 0, function* () {
@@ -385,9 +391,7 @@ export default class SocketController {
         socket.on("disconnect", () => {
             console.log(`Client disconnected: ${userId} with socket ID: ${socket.id}`);
             this.removeSocket(userId, role);
-            if (role === "user") {
-                this._io.to("user-room").emit(SocketEvent.GetOnlineUsers, Array.from(this._userSocketMap.keys()));
-            }
+            this.emitOnlineUsers();
         });
     }
     removeSocket(userId, role) {

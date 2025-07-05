@@ -8,9 +8,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { ObjectId } from "mongodb";
-import walletService from "../../service/Student/walletService.js";
+if (!process.env.ADMIN_ID) {
+    throw new Error("ADMIN_ID is not set in the environment variables");
+}
+const ADMIN_ID = process.env.ADMIN_ID;
+const TUTOR_SHARE = 0.7;
+const ADMIN_SHARE = 0.3;
 export default class CourseController {
-    constructor(courseService) {
+    constructor(courseService, walletService) {
         this.courseService = courseService;
         this.walletService = walletService;
     }
@@ -45,7 +50,9 @@ export default class CourseController {
             try {
                 const { courseId } = req.params;
                 if (!courseId) {
-                    res.status(400).json({ success: false, error: "Course ID is required" });
+                    res
+                        .status(400)
+                        .json({ success: false, error: "Course ID is required" });
                     return;
                 }
                 const { course, lesson } = yield this.courseService.getCourseById(courseId);
@@ -60,17 +67,21 @@ export default class CourseController {
                     regularPrice: course.regularPrice || 0,
                     buyCount: course.buyCount || 0,
                     imageUrl: course.imageUrl || "",
-                    category: course.category && typeof course.category === 'object' && 'name' in course.category
+                    category: course.category &&
+                        typeof course.category === "object" &&
+                        "name" in course.category
                         ? course.category
                         : ((_b = course.category) === null || _b === void 0 ? void 0 : _b.toString()) || "Uncategorized",
-                    language: course.language && typeof course.language === 'object' && 'name' in course.language
+                    language: course.language &&
+                        typeof course.language === "object" &&
+                        "name" in course.language
                         ? course.language
                         : ((_c = course.language) === null || _c === void 0 ? void 0 : _c.toString()) || "Unknown",
                     isBlock: course.isBlock || false,
                     lessons: (lesson === null || lesson === void 0 ? void 0 : lesson.map((lesson) => {
                         var _a;
                         return ({
-                            _id: ((_a = lesson._id) === null || _a === void 0 ? void 0 : _a.toString()) || '',
+                            _id: ((_a = lesson._id) === null || _a === void 0 ? void 0 : _a.toString()) || "",
                             title: lesson.title || "Untitled Lesson",
                             description: lesson.description || "No description",
                             introVideoUrl: lesson.introVideoUrl || "",
@@ -83,16 +94,23 @@ export default class CourseController {
                                 : undefined,
                         });
                     })) || [],
-                    tutorId: course.tutorId && typeof course.tutorId === 'object' && 'name' in course.tutorId
+                    tutorId: course.tutorId &&
+                        typeof course.tutorId === "object" &&
+                        "name" in course.tutorId
                         ? course.tutorId
-                        : ((_d = course.tutorId) === null || _d === void 0 ? void 0 : _d.toString()) || '',
-                    tutor: course.tutor && typeof course.tutor === 'object' && 'name' in course.tutor
+                        : ((_d = course.tutorId) === null || _d === void 0 ? void 0 : _d.toString()) || "",
+                    tutor: course.tutor &&
+                        typeof course.tutor === "object" &&
+                        "name" in course.tutor
                         ? {
                             _id: course.tutor._id.toString(),
                             name: course.tutor.name || "Unknown Tutor",
                             profilePicture: course.tutor.profilePicture || undefined,
                         }
-                        : course.tutorId && typeof course.tutorId === 'object' && 'name' in course.tutorId && typeof course.tutorId.name === 'string'
+                        : course.tutorId &&
+                            typeof course.tutorId === "object" &&
+                            "name" in course.tutorId &&
+                            typeof course.tutorId.name === "string"
                             ? {
                                 _id: course.tutorId._id.toString(),
                                 name: course.tutorId.name || "Unknown Tutor",
@@ -113,7 +131,12 @@ export default class CourseController {
             try {
                 const { courseId, amount } = req.body;
                 if (!courseId || !amount) {
-                    res.status(400).json({ success: false, message: "Course ID and amount are required" });
+                    res
+                        .status(400)
+                        .json({
+                        success: false,
+                        message: "Course ID and amount are required",
+                    });
                     return;
                 }
                 const orderResponse = yield this.courseService.createOrder(courseId, amount);
@@ -156,7 +179,7 @@ export default class CourseController {
                 }
                 else if (paymentMethod === "wallet") {
                     const course = yield this.courseService.getCourseById(courseId);
-                    if (!course || typeof (course === null || course === void 0 ? void 0 : course.regularPrice) !== "number") {
+                    if (!course || typeof course.regularPrice !== "number") {
                         throw new Error("Course not found");
                     }
                     const walletResponse = yield this.walletService.wallet_payment({
@@ -176,7 +199,11 @@ export default class CourseController {
                 else {
                     throw new Error("Invalid payment method");
                 }
-                yield this.courseService.enrollCourse(userId, courseId, paymentDetails);
+                const { enrollmentId, coursePrice, tutorId } = yield this.courseService.enrollCourse(userId, courseId, paymentDetails);
+                const tutorShare = coursePrice * TUTOR_SHARE;
+                const adminShare = coursePrice * ADMIN_SHARE;
+                yield this.walletService.creditTutorWallet(enrollmentId, tutorId, tutorShare, `Tutor share for course ${courseId} enrollment`);
+                yield this.walletService.creditAdminWallet(enrollmentId, ADMIN_ID, adminShare, `Admin share for course ${courseId} enrollment`);
                 res.status(200).json({ success: true, message: "Enrollment successful" });
             }
             catch (error) {
@@ -188,7 +215,7 @@ export default class CourseController {
                     ? error.message.includes("Invalid") || error.message.includes("required")
                         ? 400
                         : error.message.includes("not found")
-                            ? 404
+                            ? 400
                             : error.message.includes("Insufficient")
                                 ? 400
                                 : 500
@@ -210,11 +237,24 @@ export default class CourseController {
                     return;
                 }
                 const courses = yield this.courseService.getEnrolledCourses(userId);
-                res.status(200).json({ success: true, message: "Enrolled courses retrieved successfully", courses });
+                res
+                    .status(200)
+                    .json({
+                    success: true,
+                    message: "Enrolled courses retrieved successfully",
+                    courses,
+                });
             }
             catch (error) {
                 console.error("Error in getEnrolledCourses:", error);
-                res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Error fetching enrolled courses" });
+                res
+                    .status(500)
+                    .json({
+                    success: false,
+                    message: error instanceof Error
+                        ? error.message
+                        : "Error fetching enrolled courses",
+                });
             }
         });
     }
@@ -238,7 +278,9 @@ export default class CourseController {
             try {
                 const { courseId } = req.params;
                 if (!courseId) {
-                    res.status(400).json({ success: false, message: 'Course ID is required' });
+                    res
+                        .status(400)
+                        .json({ success: false, message: "Course ID is required" });
                     return;
                 }
                 const result = yield this.courseService.listLessons(courseId);
@@ -249,8 +291,98 @@ export default class CourseController {
                     res.status(500).json({ success: false, message: error.message });
                 }
                 else {
-                    res.status(500).json({ success: false, message: 'Unknown error occurred' });
+                    res
+                        .status(500)
+                        .json({ success: false, message: "Unknown error occurred" });
                 }
+            }
+        });
+    }
+    completeLesson(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { courseId, lessonId } = req.body;
+                if (!req.user || !req.user._id) {
+                    res.status(401).json({ success: false, message: "User not authenticated" });
+                    return;
+                }
+                // Validate input
+                if (!courseId || !lessonId) {
+                    res.status(400).json({ success: false, message: "Course ID and Lesson ID are required" });
+                    return;
+                }
+                const userId = req.user._id;
+                const result = yield this.courseService.completeLesson(userId, courseId, lessonId);
+                if (result.success) {
+                    res.status(200).json({ success: true, message: "Lesson marked as completed" });
+                }
+                else {
+                    res.status(400).json({ success: false, message: result.message });
+                }
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+                console.error('Error in completeLesson controller:', errorMessage);
+                res.status(500).json({ success: false, message: errorMessage });
+            }
+        });
+    }
+    getCompletedLessons(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { courseId } = req.params;
+                if (!req.user || !req.user._id) {
+                    res.status(401).json({ success: false, message: "User not authenticated" });
+                    return;
+                }
+                if (!courseId) {
+                    res.status(400).json({ success: false, message: "Course ID is required" });
+                    return;
+                }
+                const userId = req.user._id;
+                const completedLessons = yield this.courseService.getCompletedLessons(userId, courseId);
+                res.status(200).json({
+                    success: true,
+                    completedLessons,
+                    count: completedLessons.length
+                });
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+                console.error('Error in getCompletedLessons controller:', errorMessage);
+                res.status(500).json({ success: false, message: errorMessage });
+            }
+        });
+    }
+    markCourseCompleted(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { courseId } = req.params;
+                if (!req.user || !req.user._id) {
+                    res.status(401).json({ success: false, message: "User not authenticated" });
+                    return;
+                }
+                if (!courseId) {
+                    res.status(400).json({ success: false, message: "Course ID is required" });
+                    return;
+                }
+                const userId = req.user._id;
+                const result = yield this.courseService.markCourseCompleted(userId, courseId);
+                if (result.success) {
+                    res.status(200).json({
+                        success: true,
+                        message: result.message || "Course marked as completed",
+                        isCompleted: result.isCompleted
+                    });
+                }
+                else {
+                    res.status(400).json({ success: false, message: result.message });
+                }
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+                console.error('Error in markCourseCompleted controller:', errorMessage);
+                res.status(500).json({ success: false, message: errorMessage });
             }
         });
     }

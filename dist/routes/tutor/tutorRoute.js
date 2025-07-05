@@ -6,10 +6,13 @@ import CourseController from "../../controllers/Tutor/courseController.js";
 import courseService from "../../service/Tutor/courseService.js";
 import LessonController from "../../controllers/Tutor/lessonController.js";
 import lessonService from "../../service/Tutor/lessonService.js";
+import EnrollmentController from "../../controllers/Tutor/enrolledStudentscontroller.js";
+import enrolledStudentsservice from "../../service/Tutor/enrolledStudentsservice.js";
 const router = Router();
 const tutorController = new Tutorcontroller(tutorService);
 const courseController = new CourseController(courseService);
 const lessonController = new LessonController(lessonService);
+const enrollmentController = new EnrollmentController(enrolledStudentsservice);
 router.post("/register", tutorController.registerTutor.bind(tutorController));
 router.post("/verify-otp", tutorController.verifyOtp.bind(tutorController));
 router.post("/resend-otp", tutorController.resendOtp.bind(tutorController));
@@ -34,4 +37,6 @@ router.get('/listLessons/:courseId', lessonController.listLesson.bind(lessonCont
 router.get('/lesson/:lessonId', lessonController.getLesson.bind(lessonController));
 router.put("/editLesson/:lessonId", lessonController.editLesson.bind(lessonController));
 router.delete("/deleteLesson/:lessonId", lessonController.deleteLesson.bind(lessonController));
+//EnrolledStudents
+router.get('/enrolled-students', tutorAuthenticate, enrollmentController.getEnrolledStudentsByTutor.bind(enrollmentController));
 export default router;

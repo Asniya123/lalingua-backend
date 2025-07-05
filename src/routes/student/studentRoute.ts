@@ -69,7 +69,7 @@ router.post('/wallet/check-balance', authenticate, walletController.checkBalance
 //Notification
 const notificationController = new NotificationController(notificationService)
 
-router.get("/user/:userId", authenticate, notificationController.getUserNotifications.bind(notificationController));
+router.get("/notification/:userId", authenticate, notificationController.getUserNotifications.bind(notificationController));
 
 
 //Review 

@@ -20,7 +20,8 @@ export interface IEnrolledStudent {
   enrolledDate: string;
   progress: number;
   review?: IReview;
-  totalRevenue?: number;
+  totalRevenue: number;
+
 }
 
 export interface IEnrolledStudentsResponse {

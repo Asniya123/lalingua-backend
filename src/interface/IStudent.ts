@@ -21,6 +21,7 @@ export interface IStudent extends Document {
     is_blocked?: boolean
     comparePassword(candidatePassword: string): Promise<boolean>;
     enrollments?: IEnrollment[];
+    createdAt: string;
 }
 
 
@@ -76,10 +77,16 @@ export interface googleUserData {
     profilePicture?: string;
 }
 
+export interface GetUsersResult {
+  users: IStudent[];
+  total: number;
+  totalStudents: number;
+}
+
 
 export interface IStudentRepository {
     update(studentId: string, data: Partial<IStudent> | { $pull: any }): Promise<IStudent | null>
-    getUsers(page: number, limit: number, search?: string): Promise<{ users: IStudent[], total: number }>
+    getUsers(page: number, limit: number, search?: string): Promise<{ users: IStudent[], total: number, totalStudents: number }>
     create(data: Partial<IStudent>): Promise<IStudent | null>; 
     findByEmail(email: string): Promise<IStudent | null>;
     findById(id: string): Promise<IStudent | null>;

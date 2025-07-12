@@ -1,11 +1,12 @@
 
-import mongoose, { FilterQuery } from "mongoose"
+import mongoose, { FilterQuery, Model } from "mongoose"
 import { IEnrollment, IStudent, IStudentRepository } from "../../interface/IStudent.js"
 import studentModel from "../../models/studentModel.js"
 
 
 
 class StudentRepository implements IStudentRepository{
+    
    
     async create(data: Partial<IStudent>): Promise<IStudent | null >{
         try {
@@ -81,29 +82,88 @@ class StudentRepository implements IStudentRepository{
         ).exec()
     }
 
-    async getUsers(page: number, limit: number, search?: string): Promise<{ users: IStudent[], total: number }> {
-    try {
-        const skip = (page - 1) * limit;
+     async getUsers(page: number, limit: number, search?: string): Promise<{ users: IStudent[], total: number, totalStudents: number }> {
+  try {
+    const skip = (page - 1) * limit;
+    const matchStage = search
+      ? {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ],
+        }
+      : {};
 
-        const query = search
-            ? {
-                $or: [
-                    { name: { $regex: search, $options: 'i' } },
-                    { email: { $regex: search, $options: 'i' } },
-                ],
+    // Execute all queries in parallel
+    const [users, total, totalStudents] = await Promise.all([
+      // Get paginated users
+      studentModel.aggregate([
+        { $match: matchStage },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            _id: 1,
+            username: 1,
+            name: 1,
+            email: 1,
+            mobile: 1,
+            password: 1,
+            otp: 1,
+            expiresAt: 1,
+            isVerified: 1,
+            is_verified: 1, // Make sure this is included
+            profilePicture: 1,
+            dateOfBirth: 1,
+            googleId: 1,
+            is_blocked: 1,
+            enrollments: 1,
+            // Include all possible date fields
+            createdAt: 1,
+            updatedAt: 1,
+            // Add these computed fields
+            role: { $literal: 'Student' },
+            status: { 
+              $cond: { 
+                if: '$is_blocked', 
+                then: 'Inactive', 
+                else: 'Active' 
+              } 
+            },
+            // Try to get the creation date from multiple possible fields
+            joinDate: {
+              $cond: {
+                if: { $ne: ['$createdAt', null] },
+                then: '$createdAt',
+                else: {
+                  $cond: {
+                    if: { $ne: ['$updatedAt', null] },
+                    then: '$updatedAt',
+                    else: new Date() // fallback to current date
+                  }
+                }
+              }
             }
-            : {};
+          },
+        },
+      ]),
+      
+      // Get total count of filtered results
+      studentModel.countDocuments(matchStage),
+      
+      // Get total count of all students
+      studentModel.countDocuments({}),
+    ]);
 
-        const [users, total] = await Promise.all([
-            studentModel.find(query).skip(skip).limit(limit).lean(),
-            studentModel.countDocuments(query),
-        ]);
-
-        return { users, total };
-    } catch (error) {
-        console.error('Error in StudentRepository.getUsers:', error);
-        throw new Error('Failed to fetch users from database');
-    }
+    return {
+      users: users || [],
+      total: total || 0,
+      totalStudents: totalStudents || 0,
+    };
+  } catch (error: any) {
+    console.error('Error in StudentRepository.getUsers:', error);
+    throw new Error('Failed to fetch users from database');
+  }
 }
 
 

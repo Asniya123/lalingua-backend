@@ -1,7 +1,7 @@
 import { Document, ObjectId } from "mongoose";
 import { Request, Response } from "express";
 import { ICourse } from "./ICourse.js";
-
+import { IEnrolledStudent, IEnrolledStudentsResponse } from "./IEnrollment.js";
 export interface IAdmin extends Document {
   _id: ObjectId;
   name: string;
@@ -23,22 +23,31 @@ interface Query {
 
 export interface IAdminRepository {
   findByEmail(email: string | undefined): Promise<IAdmin | null>;
+  findCourseEnrolledStudents(courseId: string): Promise<IEnrolledStudent[]>
+  getTotalAdminRevenue(): Promise<number>
 }
 
 export interface IAdminService {
   login(email: string, password: string): Promise<ILogin>;
 
-  getUsers(page: number, limit: number, search?: string): Promise<{ users: IAdmin[], total: number }>  
+  getUsers(page: number, limit: number, search?: string): Promise<{ users: IAdmin[], total: number, totalStudents: number }>  
   blockUnblock(userId: string, isBlocked: boolean): Promise<any>
 
-  getTutors(page: number, limit: number, query: Query, search?: string): Promise<{tutor: IAdmin[], total: number}>
+ getTutors(
+  page: number,
+  limit: number,
+  query: any,
+  search?: string
+): Promise<{ tutor: IAdmin[]; total: number; totalApprovedTutors: number }>;
+
   tutorManagement(tutorId: string, isBlocked: boolean): Promise<any>
   getAllTutors(): Promise<IAdmin[]>
   updateTutorStatus(tutorId: string, status: 'approved' | 'rejected', reason?: string): Promise<{ success: boolean; message: string }>
 
   getCourse(page: number, limit: number, search?: string): Promise<{ courses: ICourse[]; total: number }>
   blockedUnblocked(courseId: string, isBlocked: boolean): Promise<any>
-  
+  listCourseEnrolledStudents(courseId: string): Promise<IEnrolledStudentsResponse>
+  getTotalAdminRevenue(): Promise<number>
 }
 
 export interface IAdminController {
@@ -56,4 +65,6 @@ export interface IAdminController {
   getCourse(req: Request, res: Response): Promise<void>
   blockedUnblocked(req: Request, res: Response): Promise<void>
  
+  listCourseEnrolledStudents(req: Request, res: Response): Promise<void>
+  getTotalAdminRevenue(req: Request, res: Response): Promise<void>
 }

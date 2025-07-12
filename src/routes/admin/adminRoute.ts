@@ -47,4 +47,8 @@ router.post('/manageTutor/:tutorId', (req, res) => adminController.updateTutorSt
 router.get('/getCourses', adminController.getCourse.bind(adminController))
 router.patch('/courseBlockUnblock/:courseId', adminController.blockedUnblocked.bind(adminController))
 
+//Dashboard
+router.get('/enrolledStudents', adminController.listCourseEnrolledStudents.bind(adminController))
+router.get('/revenue', adminController.getTotalAdminRevenue.bind(adminController))
+
 export default router

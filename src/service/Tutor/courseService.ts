@@ -1,4 +1,5 @@
 import {
+  CreateCourseDTO,
   ICourse,
   ICourseRepository,
   ICourseService,
@@ -12,14 +13,14 @@ class CourseService implements ICourseService {
   }
 
   async addCourse(courseData: {
-    courseTitle: string;
-    imageUrl: string;
-    category: string;
-    language: string;
-    description: string;
-    regularPrice: number;
-    tutorId: string;
-  }): Promise<ICourse | null> {
+  courseTitle: string;
+  imageUrl: string;
+  category: string;
+  language: string;
+  description: string;
+  regularPrice: number;
+  tutorId: string;
+}): Promise<ICourse | null> {
     if (
       !courseData.courseTitle ||
       !courseData.imageUrl ||
@@ -34,19 +35,19 @@ class CourseService implements ICourseService {
       );
     }
 
-    const course: Omit<ICourse, "_id"> = {
-      courseTitle: courseData.courseTitle,
-      imageUrl: courseData.imageUrl,
-      category: courseData.category,
-      language: courseData.language,
-      description: courseData.description,
-      regularPrice: courseData.regularPrice,
-      buyCount: 0,
-      tutorId: courseData.tutorId,
-      isBlock: false,
-    };
+    const course: CreateCourseDTO = {
+  courseTitle: courseData.courseTitle,
+  imageUrl: courseData.imageUrl,
+  category: courseData.category,
+  language: courseData.language,
+  description: courseData.description,
+  regularPrice: courseData.regularPrice,
+  buyCount: 0,
+  tutorId: courseData.tutorId,
+  isBlock: false,
+};
 
-    const existingCourse = await this.courseRepository.addCourse(course);
+    const existingCourse = await this.courseRepository.addCourse(course); 
     if (!existingCourse) throw new Error("Course already exists");
     return existingCourse;
   }

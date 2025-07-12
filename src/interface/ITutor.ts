@@ -54,7 +54,11 @@ export interface googleTutorData {
 }
 
 export interface ITutorRepository {
-    getTutors(page: number, limit: number, query: Query, search?: string): Promise<{ tutor: ITutor[], total: number }>
+    getTutors(page: number, limit: number, query: any, search?: string): Promise<{
+  tutor: ITutor[];
+  total: number;
+  totalApprovedTutors: number;
+}>;
     getAllTutors(): Promise<ITutor[]>
     create(data: Partial<ITutor>): Promise<ITutor | null>
     findByEmail(email: string|undefined): Promise<ITutor | null >

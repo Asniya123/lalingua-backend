@@ -4,10 +4,11 @@ import { ICategory } from './ICategory.js';
 import { ILesson } from './ILesson.js';
 import { IEnrolledCourse, IEnrollment } from './IStudent.js';
 import { ITutor } from './ITutor.js';
+import { IReview } from './IReview.js';
 
 
 export interface ICourse{
-  _id?: string;
+  _id: string;
   courseTitle: string;
   imageUrl: string;
   category: string | Types.ObjectId
@@ -21,8 +22,13 @@ export interface ICourse{
   createdAt?: Date;
   updatedAt?: Date;
   tutor?: ITutorDisplay;
+  reviews?: IReview[];
   
 }
+
+
+export type CreateCourseDTO = Omit<ICourse, "_id" | "createdAt" | "updatedAt" | "reviews" | "tutor" | "lessons">;
+
 
 export interface ITutorDisplay {
   _id: string;
@@ -43,7 +49,7 @@ export interface ILessonPreview {
 
 
 export interface ICourseRepository {
-    addCourse(courseData: ICourse): Promise<ICourse | null>;
+    addCourse(courseData: CreateCourseDTO): Promise<ICourse | null>
     listCourses(tutorId: string,page: number, limit: number, search?: string): Promise<{ courses: ICourse[]; total: number }>;
     findById(courseId: string): Promise<ICourse | null>
     editCourse(courseId: string, courseData: Partial<ICourse>): Promise<ICourse | null>;
@@ -156,7 +162,6 @@ export interface CourseCompletionResult {
     getCompletedLessons(req: Request, res: Response): Promise<void>
     markCourseCompleted(req: Request, res: Response): Promise<void>
   }
-
 
 
 

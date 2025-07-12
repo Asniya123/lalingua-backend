@@ -25,7 +25,6 @@ class EnrollmentRepository implements IEnrollmentRepository {
         })}`
       );
 
-      // Fetch courses for the tutor
       const tutorCourses = await courseModel
         .find({ tutorId: new Types.ObjectId(tutorId) })
         .select("_id regularPrice")
@@ -38,7 +37,7 @@ class EnrollmentRepository implements IEnrollmentRepository {
         return [];
       }
 
-      // Prepare query for enrolled students
+      
       const enrollmentQuery = courseId
         ? { "enrollments.courseId": new Types.ObjectId(courseId) }
         : { "enrollments.courseId": { $in: courseIds } };
@@ -48,7 +47,6 @@ class EnrollmentRepository implements IEnrollmentRepository {
         JSON.stringify(enrollmentQuery, null, 2)
       );
 
-      // Fetch students with enrollments
       const students = await userModel
         .find(enrollmentQuery)
         .select("_id name email enrollments")
@@ -112,14 +110,14 @@ class EnrollmentRepository implements IEnrollmentRepository {
                 (c) => c._id.toString() === enrollmentCourseId
               );
               const regularPrice = course?.regularPrice || 0;
-              const revenuePerEnrollment = regularPrice; // Adjust based on your pricing model
+              const revenuePerEnrollment = regularPrice; 
               courseRevenueMap.set(
                 enrollmentCourseId,
                 (courseRevenueMap.get(enrollmentCourseId) || 0) +
                   revenuePerEnrollment
               );
 
-              // Get reviews for this student and course
+        
               const studentReviews =
                 reviewMap.get(
                   `${enrollmentCourseId}-${student._id.toString()}`
@@ -146,8 +144,8 @@ class EnrollmentRepository implements IEnrollmentRepository {
                       userId: student._id.toString(),
                       rating: latestReview.rating,
                       comment: latestReview.comment,
-                      createdAt: latestReview.createdAt, // Already a string
-                      updatedAt: latestReview.updatedAt, // Already a string
+                      createdAt: latestReview.createdAt, 
+                      updatedAt: latestReview.updatedAt, 
                     }
                   : undefined,
               });

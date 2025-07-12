@@ -43,37 +43,38 @@ export default class AdminController implements IAdminController {
 
   async getUsers(req: Request, res: Response): Promise<void> {
     try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 5;
-        const search = (req.query.search as string) || '';
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 5;
+      const search = (req.query.search as string) || '';
 
-        if (page < 1 || limit < 1) {
-            res.status(400).json({
-                success: false,
-                error: 'Invalid pagination parameters. Page and limit must be positive numbers'
-            });
-            return;
-        }
-
-        const { users, total } = await this.adminService.getUsers(page, limit, search);
-
-        res.status(200).json({
-            success: true,
-            data: {
-                users,
-                pagination: {
-                    currentPage: page,
-                    totalPages: Math.ceil(total / limit),
-                    totalItems: total,
-                    itemsPerPage: limit,
-                },
-            },
+      if (page < 1 || limit < 1) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid pagination parameters. Page and limit must be positive numbers',
         });
+        return;
+      }
+
+      const { users, total, totalStudents } = await this.adminService.getUsers(page, limit, search);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          users,
+          totalStudents, // Added total student count
+          pagination: {
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalItems: total,
+            itemsPerPage: limit,
+          },
+        },
+      });
     } catch (error) {
-        console.error("Error in getUsers controller:", error);
-        res.status(500).json({ error: "Internal server error" });
+      console.error('Error in getUsers controller:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-}
+  }
 
   async blockUnblock(req: Request, res: Response): Promise<void> {
     try {
@@ -111,37 +112,40 @@ export default class AdminController implements IAdminController {
 
   async getTutors(req: Request, res: Response): Promise<void> {
     try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 5;
-        const status = (req.query.status as string) || 'approved';
-        const search = (req.query.search as string) || '';
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 5;
+      const status = (req.query.status as string) || 'approved';
+      const search = (req.query.search as string) || '';
 
-        if (page < 1 || limit < 1) {
-            res.status(400).json({
-                error: 'Invalid pagination parameters. Page and limit must be positive numbers'
-            });
-            return;
-        }
-
-        const { tutor, total } = await this.adminService.getTutors(page, limit, { status }, search);
-
-        res.status(200).json({
-            success: true,
-            data: {
-                tutors: tutor,
-                pagination: {
-                    currentPage: page,
-                    totalPages: Math.ceil(total / limit),
-                    totalItems: total,
-                    itemsPerPage: limit,
-                },
-            },
+      if (page < 1 || limit < 1) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid pagination parameters. Page and limit must be positive numbers',
         });
-    } catch (error) {
-        console.error('Error in getTutors controller:', error);
-        res.status(500).json({ error: "Internal server error" });
+        return;
+      }
+
+      const { tutor, total, totalApprovedTutors } = await this.adminService.getTutors(page, limit, { status }, search);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          tutors: tutor,
+          totalApprovedTutors, // Return only approved tutors count for dashboard
+          pagination: {
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalItems: total,
+            itemsPerPage: limit,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Error in getTutors controller:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-}
+  }
+
 
   async tutorManagement(req: Request, res: Response): Promise<void> {
     try {
@@ -217,35 +221,36 @@ async updateTutorStatus(req: Request, res: Response): Promise<void> {
 //Course
 async getCourse(req: Request, res: Response): Promise<void> {
     try {
-      const page = parseInt(req.query. page as string) || 1
-      const limit = parseInt(req.query.limit as string) || 5
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 5;
       const search = (req.query.search as string) || '';
 
-      if(page < 1 || limit < 1){
+      if (page < 1 || limit < 1) {
         res.status(400).json({
-          error: 'Invalid pagination parameters. page and limit must be positive number'
-        })
-        return
+          error: 'Invalid pagination parameters. page and limit must be positive numbers',
+        });
+        return;
       }
 
-      const {courses, total} = await this.adminService.getCourse(page, limit,search)
+      const { courses, total } = await this.adminService.getCourse(page, limit, search);
 
       res.status(200).json({
         success: true,
         data: {
-          courses, pagination: {
+          courses,
+          pagination: {
             currentPage: page,
             totalPages: Math.ceil(total / limit),
-            totalItem: total,
-            itemPerPage: limit, 
+            totalItems: total,
+            itemsPerPage: limit,
           },
         },
-      })
+      });
     } catch (error) {
-      console.error('Error in getCourses controller:', error)
-      res.status(500).json({error: 'Internal server error'})
+      console.error('Error in getCourses controller:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-}
+  }
 
 async blockedUnblocked(req: Request, res: Response): Promise<void> {
   try {
@@ -281,5 +286,52 @@ async blockedUnblocked(req: Request, res: Response): Promise<void> {
 }
 
 
+async listCourseEnrolledStudents(req: Request, res: Response): Promise<void> {
+    try {
+      const { courseId } = req.query as { courseId?: string };
 
+      if (!courseId) {
+        console.error('Controller: Missing courseId');
+        res.status(400).json({
+          success: false,
+          message: 'Course ID is required',
+          students: [],
+        });
+        return;
+      }
+
+      console.log(`Controller: Fetching students for course ${courseId}`);
+
+      const result = await this.adminService.listCourseEnrolledStudents(courseId);
+
+      console.log(`Controller: Returning ${result.students.length} students`, JSON.stringify(result, null, 2));
+      res.status(200).json(result);
+    } catch (error: any) {
+      console.error('Controller: Error in listCourseEnrolledStudents:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to fetch enrolled students',
+        students: [],
+      });
+    }
+  }
+
+  async getTotalAdminRevenue(req: Request, res: Response): Promise<void> {
+    try {
+      console.log(`Controller: Fetching total admin revenue`);
+      const totalRevenue = await this.adminService.getTotalAdminRevenue();
+      res.status(200).json({
+        success: true,
+        message: 'Total admin revenue retrieved successfully',
+        totalRevenue,
+      });
+    } catch (error: any) {
+      console.error('Controller: Error in getTotalAdminRevenue:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to fetch total admin revenue',
+        totalRevenue: 0,
+      });
+    }
+  }
 }

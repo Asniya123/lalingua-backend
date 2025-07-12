@@ -1,7 +1,6 @@
 import { ILogin, IAdminRepository, IAdminService, IAdmin } from "../../interface/IAdmin.js";
 import adminRepository from "../../repositories/admin/adminRepository.js";
 import studentRepository from "../../repositories/student/studentRepo.js"
-import bcrypt from "bcrypt";
 import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils.js";
 import { IStudentRepository } from "../../interface/IStudent.js";
 import tutorRepository from "../../repositories/tutor/tutorRepo.js";
@@ -9,12 +8,14 @@ import { ITutor, ITutorRepository } from "../../interface/ITutor.js";
 import { sendMail } from "../../utils/sendMail.js";
 import { ICourse, ICourseRepository } from "../../interface/ICourse.js";
 import courseRepo from "../../repositories/tutor/courseRepo.js";
+import { IEnrolledStudentsResponse } from "../../interface/IEnrollment.js";
 
 class AdminService implements IAdminService {
   private adminRepository: IAdminRepository;
   private studentRepository: IStudentRepository;
   private tutorRepository: ITutorRepository;
   private courseRepository: ICourseRepository
+  
  
 
   constructor(adminRepository: IAdminRepository, studentRepository: IStudentRepository,tutorRepository:ITutorRepository,courseRepository: ICourseRepository) {
@@ -47,9 +48,16 @@ class AdminService implements IAdminService {
     };
   }
 
-  async getUsers(page: number, limit: number, search?: string ): Promise<{ users: IAdmin[], total: number }> {
-    return await this.studentRepository.getUsers(page, limit, search);
-}
+  async getUsers(page: number, limit: number, search?: string ): Promise<{ users: IAdmin[], total: number, totalStudents: number}> {
+    try {
+      const data = await this.studentRepository.getUsers(page, limit, search);
+      return data;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Service error: ${errorMessage}`);
+    }
+  }
+
 
   async blockUnblock(userId: string, isBlocked: boolean): Promise<any> {
     try {
@@ -68,9 +76,14 @@ class AdminService implements IAdminService {
   }
   
 
-  async getTutors(page: number, limit: number, query: any = { status: 'approved' }, search?: string ): Promise<{ tutor: ITutor[], total: number }> {
-    return await this.tutorRepository.getTutors(page, limit, query, search);
-}
+  async getTutors(page: number, limit: number, query: any = { status: 'approved' }, search?: string ): Promise<{ tutor: IAdmin[], total: number, totalApprovedTutors: number }> {
+    try {
+      return await this.tutorRepository.getTutors(page, limit, query, search);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Service error: ${errorMessage}`);
+    }
+  }
 
   async tutorManagement(tutorId: string, isBlocked: boolean): Promise<any> {
       try {
@@ -134,6 +147,40 @@ class AdminService implements IAdminService {
         throw new Error(`Failed to block/unblock course: ${error.message}`);
     }
 }
+
+async listCourseEnrolledStudents(courseId: string): Promise<IEnrolledStudentsResponse> {
+    try {
+      if (!courseId) {
+        throw new Error('Course ID is required');
+      }
+
+      console.log(`Service: Fetching enrolled students for course: ${courseId}`);
+
+      const students = await this.adminRepository.findCourseEnrolledStudents(courseId);
+
+      console.log(`Service: Found ${students.length} enrolled students`, JSON.stringify(students, null, 2));
+      return {
+        success: true,
+        message: `Successfully retrieved ${students.length} enrolled students`,
+        students,
+      };
+    } catch (error: any) {
+      console.error('Service: Error in listCourseEnrolledStudents:', error);
+      throw new Error(error.message || 'Failed to fetch enrolled students');
+    }
+  }
+
+  async getTotalAdminRevenue(): Promise<number> {
+    try {
+      console.log(`Service: Fetching total admin revenue`);
+      const totalRevenue = await this.adminRepository.getTotalAdminRevenue();
+      console.log(`Service: Total admin revenue: ${totalRevenue}`);
+      return totalRevenue;
+    } catch (error: any) {
+      console.error('Service: Error in getTotalAdminRevenue:', error);
+      throw new Error(error.message || 'Failed to fetch total admin revenue');
+    }
+  }
 
 }
 

@@ -183,9 +183,11 @@ export default class AdminController implements IAdminController {
 
   async getAllTutors(req: Request, res: Response): Promise<void> {
     try {
-        const tutors = await this.adminService.getAllTutors();
+        const { search } = req.query;
+        const tutors = await this.adminService.getAllTutors(search as string);
         res.status(200).json({ success: true, tutors });
     } catch (error) {
+        console.error("Error in getAllTutors controller:", error);
         const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
         res.status(500).json({ success: false, message: errorMessage });
     }

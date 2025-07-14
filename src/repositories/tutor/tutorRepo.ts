@@ -158,9 +158,26 @@ class TutorRepository implements ITutorRepository {
     }
   }
 
-  async getAllTutors(): Promise<ITutor[]> {
-    return await tutorModel.find();
-  }
+async getAllTutors(search?: string): Promise<ITutor[]> {
+    try {
+        let query = {};
+        
+        if (search && search.trim()) {
+            query = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                    { status: { $regex: search, $options: 'i' } }
+                ]
+            };
+        }
+        
+        return await tutorModel.find(query).sort({ createdAt: -1 });
+    } catch (error) {
+        console.error("Error in getAllTutors repository:", error);
+        throw error;
+    }
+}
 
   async getTutorProfile(tutorId: string): Promise<ITutor | null> {
     return await tutorModel.findById(tutorId);

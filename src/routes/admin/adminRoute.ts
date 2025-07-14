@@ -1,12 +1,12 @@
 import AdminController from "../../controllers/Admin/adminController.js"
 import CategoryController from "../../controllers/Admin/categoryController.js"
-
 import adminService from "../../service/Admin/adminService.js"
-
 import {  Router } from 'express'
 import categoryService from "../../service/Admin/categoryService.js"
 import LanguageController from "../../controllers/Admin/languageController.js"
 import languageService from "../../service/Admin/languageService.js"
+import EnrollmentChartController from "../../controllers/Admin/enrollmentChart.js"
+import enrollmentChart from "../../service/Admin/enrollmentChart.js"
 
 
 const router = Router()
@@ -50,5 +50,10 @@ router.patch('/courseBlockUnblock/:courseId', adminController.blockedUnblocked.b
 //Dashboard
 router.get('/enrolledStudents', adminController.listCourseEnrolledStudents.bind(adminController))
 router.get('/revenue', adminController.getTotalAdminRevenue.bind(adminController))
+
+//Chart
+const enrollmentChartController = new EnrollmentChartController(enrollmentChart)
+
+router.get('/stats', enrollmentChartController.getEnrollmentStats.bind(enrollmentChartController))
 
 export default router

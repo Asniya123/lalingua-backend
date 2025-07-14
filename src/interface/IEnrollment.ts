@@ -56,3 +56,40 @@ export interface IEnrollmentService {
 export interface IEnrollmentController {
   listEnrolledStudents(req: Request, res: Response): Promise<void>
 }
+
+
+export interface IDailyEnrollment {
+  day: string;
+  count: number;
+}
+
+export interface IMonthlyEnrollment {
+  month: string;
+  count: number;
+}
+
+export interface IYearlyEnrollment {
+  year: number;
+  count: number;
+}
+
+export interface IEnrollmentStats {
+  daily: IDailyEnrollment[];
+  monthly: IMonthlyEnrollment[];
+  yearly: IYearlyEnrollment[];
+}
+
+export interface IEnrollmentChartRepository {
+  getDailyEnrollmentData(): Promise<IDailyEnrollment[]>;
+  getMonthlyEnrollmentData(): Promise<IMonthlyEnrollment[]>;
+  getYearlyEnrollmentData(): Promise<IYearlyEnrollment[]>;
+  getEnrollmentStats(): Promise<IEnrollmentStats>;
+}
+
+export interface IEnrollmentChartService{
+   fetchEnrollmentStats(): Promise<IEnrollmentStats>
+}
+
+export interface IEnrollmentChartController{
+  getEnrollmentStats(req: Request, res: Response): Promise<void>
+}

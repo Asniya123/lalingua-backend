@@ -41,7 +41,7 @@ export interface IAdminService {
 ): Promise<{ tutor: IAdmin[]; total: number; totalApprovedTutors: number }>;
 
   tutorManagement(tutorId: string, isBlocked: boolean): Promise<any>
-  getAllTutors(): Promise<IAdmin[]>
+  getAllTutors(search?: string): Promise<IAdmin[]> 
   updateTutorStatus(tutorId: string, status: 'approved' | 'rejected', reason?: string): Promise<{ success: boolean; message: string }>
 
   getCourse(page: number, limit: number, search?: string): Promise<{ courses: ICourse[]; total: number }>

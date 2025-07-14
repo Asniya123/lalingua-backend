@@ -59,7 +59,7 @@ export interface ITutorRepository {
   total: number;
   totalApprovedTutors: number;
 }>;
-    getAllTutors(): Promise<ITutor[]>
+    getAllTutors(search?: string): Promise<ITutor[]>
     create(data: Partial<ITutor>): Promise<ITutor | null>
     findByEmail(email: string|undefined): Promise<ITutor | null >
     findById(id: string): Promise<ITutor | null >

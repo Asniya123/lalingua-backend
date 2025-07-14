@@ -100,9 +100,15 @@ class AdminService implements IAdminService {
       }
   }
 
-  async getAllTutors(): Promise<IAdmin[]> {
-      return await this.tutorRepository.getAllTutors()
-  }
+  
+async getAllTutors(search?: string): Promise<IAdmin[]> {
+    try {
+        return await this.tutorRepository.getAllTutors(search);
+    } catch (error) {
+        console.error("Error in getAllTutors service:", error);
+        throw error;
+    }
+}
 
   async updateTutorStatus(tutorId: string, status: "approved" | "rejected", reason?: string): Promise<{ success: boolean; message: string; }> {
       const tutor = await this.tutorRepository.findById(tutorId)

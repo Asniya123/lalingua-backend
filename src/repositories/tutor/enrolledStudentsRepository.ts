@@ -2,10 +2,10 @@ import { Types } from "mongoose";
 import {
   IEnrolledStudent,
   IEnrollmentRepository,
-} from "../../interface/IEnrollment.js";
-import userModel from "../../models/studentModel.js";
-import courseModel from "../../models/courseModel.js";
-import reviewModel from "../../models/reviewModel.js";
+} from "../../interface/IEnrollment";
+import userModel from "../../models/studentModel";
+import courseModel from "../../models/courseModel";
+import reviewModel from "../../models/reviewModel";
 
 class EnrollmentRepository implements IEnrollmentRepository {
   async findEnrolledStudents(

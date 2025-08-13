@@ -1,5 +1,5 @@
 import { model, Schema } from 'mongoose';
-import { IPurchase } from '../interface/IPurchase.js'
+import { IPurchase } from '../interface/IPurchase'
 
 const PurchaseSchema = new Schema<IPurchase>({
   userId: {

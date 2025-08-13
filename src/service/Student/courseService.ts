@@ -1,28 +1,28 @@
 import mongoose, { isValidObjectId, Types } from "mongoose";
-import { ICategoryRepository } from "../../interface/ICategory.js";
+import { ICategoryRepository } from "../../interface/ICategory";
 import {
   CourseCompletionResult,
   ICourse,
   ISCourseRepository,
   ISCourseService,
   T,
-} from "../../interface/ICourse.js";
+} from "../../interface/ICourse";
 import {
   IEnrolledCourse,
   IEnrollment,
   IStudentRepository,
-} from "../../interface/IStudent.js";
-import categoryRepository from "../../repositories/admin/categoryRepository.js";
-import courseRepository from "../../repositories/student/courseRepository.js";
-import studentRepo from "../../repositories/student/studentRepo.js";
+} from "../../interface/IStudent";
+import categoryRepository from "../../repositories/admin/categoryRepository";
+import courseRepository from "../../repositories/student/courseRepository";
+import studentRepo from "../../repositories/student/studentRepo";
 import Razorpay from "razorpay";
 import dotenv from "dotenv";
-import { ILesson, ILessonRepository } from "../../interface/ILesson.js";
-import lessonRepository from "../../repositories/tutor/lessonRepository.js";
-import { IWalletRepository } from "../../interface/IWallet.js";
-import walletRepository from "../../repositories/student/walletRepository.js";
-import { IReviewRepository } from "../../interface/IReview.js";
-import reviewRepository from "../../repositories/student/reviewRepository.js";
+import { ILesson, ILessonRepository } from "../../interface/ILesson";
+import lessonRepository from "../../repositories/tutor/lessonRepository";
+import { IWalletRepository } from "../../interface/IWallet";
+import walletRepository from "../../repositories/student/walletRepository";
+import { IReviewRepository } from "../../interface/IReview";
+import reviewRepository from "../../repositories/student/reviewRepository";
 
 dotenv.config();
 

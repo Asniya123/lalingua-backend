@@ -1,6 +1,6 @@
 import mongoose, { Types } from "mongoose";
-import { IWallet, IWalletRepository } from "../../interface/IWallet.js";
-import WalletModel from "../../models/walletModel.js";
+import { IWallet, IWalletRepository } from "../../interface/IWallet";
+import WalletModel from "../../models/walletModel";
 
 
 

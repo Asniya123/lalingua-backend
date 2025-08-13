@@ -1,19 +1,17 @@
 import { Request, Response, Router }  from "express";
-import StudentController from "../../controllers/Student/studentController.js";
-import studentService from "../../service/Student/studentService.js";
-import { authenticate } from "../../middleware/authMiddleware.js";
-import CourseController from "../../controllers/Student/courseController.js";
-import courseService from "../../service/Student/courseService.js";
-import tutorService from "../../service/Student/tutorService.js";
-import TutorController from "../../controllers/Student/tutorController.js";
-import WalletController from "../../controllers/Student/walletController.js";
-import walletService from "../../service/Student/walletService.js";
-import NotificationController from "../../controllers/Socket/notificationController.js";
-import notificationService from "../../service/UseCase/notificationService.js";
-import ReviewController from "../../controllers/Student/reviewController.js";
-import reviewService from "../../service/Student/reviewService.js";
-
-
+import StudentController from "../../controllers/Student/studentController";
+import studentService from "../../service/Student/studentService";
+import { authenticate } from "../../middleware/authMiddleware";
+import CourseController from "../../controllers/Student/courseController";
+import courseService from "../../service/Student/courseService";
+import tutorService from "../../service/Student/tutorService";
+import TutorController from "../../controllers/Student/tutorController";
+import WalletController from "../../controllers/Student/walletController";
+import walletService from "../../service/Student/walletService";
+import NotificationController from "../../controllers/Socket/notificationController";
+import notificationService from "../../service/UseCase/notificationService";
+import ReviewController from "../../controllers/Student/reviewController";
+import reviewService from "../../service/Student/reviewService";
 
 
 const router = Router()
@@ -69,8 +67,8 @@ router.post('/wallet/check-balance', authenticate, walletController.checkBalance
 //Notification
 const notificationController = new NotificationController(notificationService)
 
-router.get("/notification/:userId", authenticate, notificationController.getUserNotifications.bind(notificationController));
-
+router.get("/notifications", authenticate, notificationController.getUserNotifications.bind(notificationController));
+router.put("/notifications/:notificationId/read", authenticate, notificationController.markNotificationRead.bind(notificationController))
 
 //Review 
 const reviewController = new ReviewController(reviewService)

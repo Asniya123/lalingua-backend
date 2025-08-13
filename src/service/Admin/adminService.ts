@@ -1,14 +1,14 @@
-import { ILogin, IAdminRepository, IAdminService, IAdmin } from "../../interface/IAdmin.js";
-import adminRepository from "../../repositories/admin/adminRepository.js";
-import studentRepository from "../../repositories/student/studentRepo.js"
-import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils.js";
-import { IStudentRepository } from "../../interface/IStudent.js";
-import tutorRepository from "../../repositories/tutor/tutorRepo.js";
-import { ITutor, ITutorRepository } from "../../interface/ITutor.js";
-import { sendMail } from "../../utils/sendMail.js";
-import { ICourse, ICourseRepository } from "../../interface/ICourse.js";
-import courseRepo from "../../repositories/tutor/courseRepo.js";
-import { IEnrolledStudentsResponse } from "../../interface/IEnrollment.js";
+import { ILogin, IAdminRepository, IAdminService, IAdmin } from "../../interface/IAdmin";
+import adminRepository from "../../repositories/admin/adminRepository";
+import studentRepository from "../../repositories/student/studentRepo"
+import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils";
+import { IStudentRepository } from "../../interface/IStudent";
+import tutorRepository from "../../repositories/tutor/tutorRepo";
+import { ITutor, ITutorRepository } from "../../interface/ITutor";
+import { sendMail } from "../../utils/sendMail";
+import { ICourse, ICourseRepository } from "../../interface/ICourse";
+import courseRepo from "../../repositories/tutor/courseRepo";
+import { IEnrolledStudentsResponse } from "../../interface/IEnrollment";
 
 class AdminService implements IAdminService {
   private adminRepository: IAdminRepository;

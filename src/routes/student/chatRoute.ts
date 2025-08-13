@@ -1,7 +1,7 @@
 import { Request, Response, Router }  from "express";
-import { authenticate } from "../../middleware/authMiddleware.js";
-import ChatMsgController from "../../controllers/Socket/chatController.js";
-import chatMessage from "../../service/UseCase/chatService.js";
+import { authenticate } from "../../middleware/authMiddleware";
+import ChatMsgController from "../../controllers/Socket/chatController";
+import chatMessage from "../../service/UseCase/chatService";
 
 
 const router = Router()

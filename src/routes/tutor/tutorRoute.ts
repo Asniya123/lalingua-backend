@@ -1,13 +1,13 @@
-import Tutorcontroller from "../../controllers/Tutor/tutorController.js";
-import tutorService from "../../service/Tutor/tutorService.js";
-import {  tutorAuthenticate } from "../../middleware/tutorMiddleware.js";
+import Tutorcontroller from "../../controllers/Tutor/tutorController";
+import tutorService from "../../service/Tutor/tutorService";
+import {  tutorAuthenticate } from "../../middleware/tutorMiddleware";
 import {  Router } from "express";
-import CourseController from "../../controllers/Tutor/courseController.js";
-import courseService from "../../service/Tutor/courseService.js";
-import LessonController from "../../controllers/Tutor/lessonController.js";
-import lessonService from "../../service/Tutor/lessonService.js";
-import EnrollmentController from "../../controllers/Tutor/enrolledStudentscontroller.js";
-import enrolledStudentsservice from "../../service/Tutor/enrolledStudentsservice.js";
+import CourseController from "../../controllers/Tutor/courseController";
+import courseService from "../../service/Tutor/courseService";
+import LessonController from "../../controllers/Tutor/lessonController";
+import lessonService from "../../service/Tutor/lessonService";
+import EnrollmentController from "../../controllers/Tutor/enrolledStudentscontroller";
+import enrolledStudentsservice from "../../service/Tutor/enrolledStudentsservice";
 
 
 const router = Router();

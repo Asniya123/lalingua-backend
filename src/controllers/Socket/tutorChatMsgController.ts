@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { IChatMsgController, IChatMsgService } from "../../interface/IConversation.js";
-import { isString } from "../Admin/adminController.js";
+import { IChatMsgController, IChatMsgService } from "../../interface/IConversation";
+import { isString } from "../Admin/adminController";
 import mongoose from "mongoose";
 
 export default class TutorChatController implements IChatMsgController {

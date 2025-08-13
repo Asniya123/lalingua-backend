@@ -1,4 +1,4 @@
-import { ILesson, ILessonController, ILessonInput, ILessonService } from "../../interface/ILesson.js";
+import { ILesson, ILessonController, ILessonInput, ILessonService } from "../../interface/ILesson";
 import {Request, Response} from 'express'
 
 export default class LessonController implements ILessonController{

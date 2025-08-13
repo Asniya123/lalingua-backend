@@ -4,11 +4,11 @@ import {
   IChatRepository,
   IConversation,
   IMessage,
-} from "../interface/IConversation.js";
-import chatModel from "../models/chatModel.js";
-import MessageModel from "../models/messageModel.js";
-import tutorRepo from "./tutor/tutorRepo.js";
-import studentRepo from "./student/studentRepo.js";
+} from "../interface/IConversation";
+import chatModel from "../models/chatModel";
+import MessageModel from "../models/messageModel";
+import tutorRepo from "./tutor/tutorRepo";
+import studentRepo from "./student/studentRepo";
 
 class ChatRepository implements IChatRepository {
   async saveMessage(

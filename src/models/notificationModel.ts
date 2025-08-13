@@ -1,6 +1,5 @@
-
 import { model, Schema } from "mongoose";
-import { INotification } from "../interface/INotification.js";
+import { INotification } from "../interface/INotification";
 
 const NotificationSchema = new Schema<INotification>(
   {
@@ -37,11 +36,14 @@ const NotificationSchema = new Schema<INotification>(
       type: String,
       enum: ["User", "Tutor", "Admin"],
     },
+    roomId: {
+      type: String,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-const NotificationModel = model<INotification>("Notification", NotificationSchema); 
+const NotificationModel = model<INotification>("Notification", NotificationSchema);
 export default NotificationModel;

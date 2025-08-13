@@ -1,4 +1,4 @@
-import { IEnrollmentController, IEnrollmentService } from "../../interface/IEnrollment.js";
+import { IEnrollmentController, IEnrollmentService } from "../../interface/IEnrollment";
 import { Request, Response } from 'express';
 
 

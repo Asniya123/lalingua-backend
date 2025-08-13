@@ -1,5 +1,5 @@
-import {IWallet, IWalletRepository, IWalletService } from "../../interface/IWallet.js";
-import walletRepository from "../../repositories/student/walletRepository.js";
+import {IWallet, IWalletRepository, IWalletService } from "../../interface/IWallet";
+import walletRepository from "../../repositories/student/walletRepository";
 import mongoose from "mongoose";
 
 interface Transaction {

@@ -6,9 +6,9 @@ import {
  
   IEnrollmentRepository,
   IEnrollmentService,
-} from "../../interface/IEnrollment.js";
+} from "../../interface/IEnrollment";
 
-import enrolledStudents from "../../repositories/tutor/enrolledStudentsRepository.js";
+import enrolledStudents from "../../repositories/tutor/enrolledStudentsRepository";
 
 class EnrollmentService implements IEnrollmentService {
   private enrollmentRepository: IEnrollmentRepository;

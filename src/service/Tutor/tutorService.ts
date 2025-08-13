@@ -1,8 +1,8 @@
-import { googleTutorData, IEnrolledStudent, ILogin, ITutor, ITutorRepository, ITutorService } from "../../interface/ITutor.js";
-import tutorRepo from "../../repositories/tutor/tutorRepo.js";
-import { sendMail } from "../../utils/sendMail.js";
-import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils.js";
-import { comparePassword, hashPassword } from "../../utils/passwordUtil.js";
+import { googleTutorData, IEnrolledStudent, ILogin, ITutor, ITutorRepository, ITutorService } from "../../interface/ITutor";
+import tutorRepo from "../../repositories/tutor/tutorRepo";
+import { sendMail } from "../../utils/sendMail";
+import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils";
+import { comparePassword, hashPassword } from "../../utils/passwordUtil";
 import bcrypt from "bcrypt";
 
 class TutorService implements ITutorService {

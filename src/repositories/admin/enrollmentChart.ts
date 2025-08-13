@@ -1,5 +1,5 @@
-import { IDailyEnrollment, IEnrollmentChartRepository, IEnrollmentStats, IMonthlyEnrollment, IYearlyEnrollment } from "../../interface/IEnrollment.js";
-import studentModel from "../../models/studentModel.js";
+import { IDailyEnrollment, IEnrollmentChartRepository, IEnrollmentStats, IMonthlyEnrollment, IYearlyEnrollment } from "../../interface/IEnrollment";
+import studentModel from "../../models/studentModel";
 
 class EnrollmentChartRepository implements IEnrollmentChartRepository{
     async getDailyEnrollmentData(): Promise<IDailyEnrollment[]> {

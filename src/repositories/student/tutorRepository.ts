@@ -1,5 +1,5 @@
-import { ISTutorRepository, ITutor } from "../../interface/ITutor.js";
-import tutorModel from "../../models/tutorModel.js";
+import { ISTutorRepository, ITutor } from "../../interface/ITutor";
+import tutorModel from "../../models/tutorModel";
 
 class TutorRepository implements ISTutorRepository{
 

@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { ILanguage } from "../interface/ILanguage.js";
+import { ILanguage } from "../interface/ILanguage";
 
 
 

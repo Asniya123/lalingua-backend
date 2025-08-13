@@ -1,5 +1,5 @@
 import mongoose, { model, Schema } from "mongoose";
-import { IConversation } from "../interface/IConversation.js";
+import { IConversation } from "../interface/IConversation";
 
 const ChatSchema = new Schema<IConversation>({
   participants: [{

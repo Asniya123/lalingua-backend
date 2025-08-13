@@ -3,7 +3,7 @@ import {
   ITutorController,
   ITutorService,
   IEnrollmentStudService
-} from "../../interface/ITutor.js";
+} from "../../interface/ITutor";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "jsonwebtoken";

@@ -1,11 +1,10 @@
-import { INotification, INotificationRepository } from "../interface/INotification.js";
-import NotificationModel from "../models/notificationModel.js";
+import { INotification, INotificationRepository } from "../interface/INotification";
+import NotificationModel from "../models/notificationModel";
 import { Types } from "mongoose";
 
 class NotificationRepository implements INotificationRepository {
   async saveNotification(data: INotification): Promise<INotification | null> {
     try {
-  
       const notificationData = {
         ...data,
         from: new Types.ObjectId(data.from),
@@ -47,22 +46,6 @@ class NotificationRepository implements INotificationRepository {
       return notifications as INotification[];
     } catch (error) {
       throw new Error(`Failed to fetch user notifications: ${error}`);
-    }
-  }
-
-  async getAdminNotifications(Id: string): Promise<INotification[] | null> {
-    try {
-      const notifications = await NotificationModel.find({
-        $or: [
-          { to: new Types.ObjectId(Id), toModel: "Admin" },
-          { to: null, toModel: "Admin" },
-        ],
-      })
-        .populate("from")
-        .lean();
-      return notifications as INotification[];
-    } catch (error) {
-      throw new Error(`Failed to fetch admin notifications: ${error}`);
     }
   }
 

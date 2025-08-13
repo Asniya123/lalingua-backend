@@ -6,12 +6,12 @@ import {
   IConversation,
   IMessage,
   Participant,
-} from "../../interface/IConversation.js";
-import { IStudent, IStudentRepository } from "../../interface/IStudent.js";
-import { ITutor, ITutorRepository } from "../../interface/ITutor.js";
-import chatRepository from "../../repositories/chatRepository.js";
-import studentRepo from "../../repositories/student/studentRepo.js";
-import tutorRepo from "../../repositories/tutor/tutorRepo.js";
+} from "../../interface/IConversation";
+import { IStudent, IStudentRepository } from "../../interface/IStudent";
+import { ITutor, ITutorRepository } from "../../interface/ITutor";
+import chatRepository from "../../repositories/chatRepository";
+import studentRepo from "../../repositories/student/studentRepo";
+import tutorRepo from "../../repositories/tutor/tutorRepo";
 
 class ChatService implements IChatMsgService {
   private chatRepository: IChatRepository;

@@ -1,11 +1,11 @@
-import { googleUserData, ILogin, IStudent, IStudentRepository, IStudentService} from "../../interface/IStudent.js";
-import studentRepo from "../../repositories/student/studentRepo.js";
-import { sendMail } from "../../utils/sendMail.js";
+import { googleUserData, ILogin, IStudent, IStudentRepository, IStudentService} from "../../interface/IStudent";
+import studentRepo from "../../repositories/student/studentRepo";
+import { sendMail } from "../../utils/sendMail";
 import bcrypt from "bcrypt";
-import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils.js";
-import {  hashPassword } from "../../utils/passwordUtil.js";
-import { ILanguage, ILanguageRepository } from "../../interface/ILanguage.js";
-import languageRepository from "../../repositories/admin/languageRepository.js";
+import { generateAccessToken, generateRefreshToken } from "../../utils/tokenUtils";
+import {  hashPassword } from "../../utils/passwordUtil";
+import { ILanguage, ILanguageRepository } from "../../interface/ILanguage";
+import languageRepository from "../../repositories/admin/languageRepository";
 
 
 

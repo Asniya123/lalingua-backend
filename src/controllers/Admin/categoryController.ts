@@ -1,4 +1,4 @@
-import { ICategory, ICategoryController, ICategoryService } from "../../interface/ICategory.js";
+import { ICategory, ICategoryController, ICategoryService } from "../../interface/ICategory";
 import { Request, Response } from "express";
 
 

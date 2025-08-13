@@ -1,7 +1,7 @@
 import {  Router } from "express";
-import {  tutorAuthenticate } from "../../middleware/tutorMiddleware.js";
-import TutorChatMsgController from "../../controllers/Socket/tutorChatMsgController.js";
-import chatMessage from "../../service/UseCase/chatService.js";
+import {  tutorAuthenticate } from "../../middleware/tutorMiddleware";
+import TutorChatMsgController from "../../controllers/Socket/tutorChatMsgController";
+import chatMessage from "../../service/UseCase/chatService";
 
 
 const router = Router();

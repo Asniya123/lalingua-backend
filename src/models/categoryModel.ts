@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { ICategory } from "../interface/ICategory.js";
+import { ICategory } from "../interface/ICategory";
 
 
 

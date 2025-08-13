@@ -1,5 +1,5 @@
-import { ISTutorRepository, ISTutorService, ITutor } from "../../interface/ITutor.js";
-import tutorRepository from "../../repositories/student/tutorRepository.js";
+import { ISTutorRepository, ISTutorService, ITutor } from "../../interface/ITutor";
+import tutorRepository from "../../repositories/student/tutorRepository";
 
 export class TutorService implements ISTutorService{
     private tutorRepository: ISTutorRepository;

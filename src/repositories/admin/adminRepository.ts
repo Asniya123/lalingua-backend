@@ -1,10 +1,10 @@
 import { Types } from "mongoose";
-import { IAdmin, IAdminRepository } from "../../interface/IAdmin.js";
-import { IEnrolledStudent } from "../../interface/IEnrollment.js";
-import adminModel from "../../models/adminModel.js";
-import reviewModel from "../../models/reviewModel.js";
-import courseModel from "../../models/courseModel.js";
-import userModel from "../../models/studentModel.js";
+import { IAdmin, IAdminRepository } from "../../interface/IAdmin";
+import { IEnrolledStudent } from "../../interface/IEnrollment";
+import adminModel from "../../models/adminModel";
+import reviewModel from "../../models/reviewModel";
+import courseModel from "../../models/courseModel";
+import userModel from "../../models/studentModel";
 
 class AdminRepository implements IAdminRepository {
   async findByEmail(email: string | undefined): Promise<IAdmin | null> {

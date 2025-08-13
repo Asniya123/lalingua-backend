@@ -4,13 +4,13 @@ import {
   ITutorRepository,
   IEnrolledStudent,
   IEnrollmentStudRepository,
-} from "../../interface/ITutor.js";
-import tutorModel from "../../models/tutorModel.js";
-import CourseModel from "../../models/courseModel.js";
-import EnrollmentModel from "../../models/enrollmentModel.js";
-import { ICourse } from "../../interface/ICourse.js";
-import { IStudent } from "../../interface/IStudent.js";
-import languageModel from "../../models/languageModel.js";
+} from "../../interface/ITutor";
+import tutorModel from "../../models/tutorModel";
+import CourseModel from "../../models/courseModel";
+import EnrollmentModel from "../../models/enrollmentModel";
+import { ICourse } from "../../interface/ICourse";
+import { IStudent } from "../../interface/IStudent";
+import languageModel from "../../models/languageModel";
 
 class TutorRepository implements ITutorRepository {
   async create(data: Partial<ITutor>): Promise<ITutor | null> {

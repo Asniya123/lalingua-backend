@@ -1,5 +1,5 @@
-import { IReview, IReviewInput, IReviewRepository } from "../../interface/IReview.js";
-import reviewModel from "../../models/reviewModel.js";
+import { IReview, IReviewInput, IReviewRepository } from "../../interface/IReview";
+import reviewModel from "../../models/reviewModel";
 
 class ReviewRepository implements IReviewRepository {
   async create(reviewInput: IReviewInput): Promise<IReview> {

@@ -1,5 +1,5 @@
-import { ILanguage, ILanguageRepository } from "../../interface/ILanguage.js";
-import languageModel from "../../models/languageModel.js";
+import { ILanguage, ILanguageRepository } from "../../interface/ILanguage";
+import languageModel from "../../models/languageModel";
 
 class LanguageRepository implements ILanguageRepository{
     async addLanguage(languageData: ILanguage): Promise<ILanguage | null> {

@@ -5,10 +5,10 @@ import {
   ISCourseService,
   ICourse,
   ITutorDisplay,
-} from "../../interface/ICourse.js";
-import { IWalletService } from "../../interface/IWallet.js";
-import walletService from "../../service/Student/walletService.js";
-import { ILesson } from "../../interface/ILesson.js";
+} from "../../interface/ICourse";
+import { IWalletService } from "../../interface/IWallet";
+import walletService from "../../service/Student/walletService";
+import { ILesson } from "../../interface/ILesson";
 
 interface PaymentDetails {
   paymentMethod: "razorpay" | "wallet";

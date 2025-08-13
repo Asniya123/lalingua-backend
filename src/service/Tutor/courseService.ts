@@ -3,8 +3,8 @@ import {
   ICourse,
   ICourseRepository,
   ICourseService,
-} from "../../interface/ICourse.js";
-import courseRepo from "../../repositories/tutor/courseRepo.js";
+} from "../../interface/ICourse";
+import courseRepo from "../../repositories/tutor/courseRepo";
 
 class CourseService implements ICourseService {
   private courseRepository: ICourseRepository;

@@ -1,5 +1,5 @@
-import { ILesson, ILessonRepository, ILessonInput } from "../../interface/ILesson.js";
-import LessonModel from "../../models/lessonModel.js";
+import { ILesson, ILessonRepository, ILessonInput } from "../../interface/ILesson";
+import LessonModel from "../../models/lessonModel";
 
 class LessonRepository implements ILessonRepository {
   async addLesson(lessonData: ILessonInput): Promise<ILesson | null> {

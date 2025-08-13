@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import adminRepository from "../repositories/admin/adminRepository.js";
+import adminRepository from "../repositories/admin/adminRepository";
 import dotenv from "dotenv";
 
 dotenv.config();

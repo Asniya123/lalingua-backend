@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { ITutor } from "../interface/ITutor.js";
+import { ITutor } from "../interface/ITutor";
 
 const TutorSchema = new Schema<ITutor>(
   {

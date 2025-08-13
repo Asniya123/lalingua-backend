@@ -1,4 +1,4 @@
-import { IAdminController, IAdminService } from "../../interface/IAdmin.js";
+import { IAdminController, IAdminService } from "../../interface/IAdmin";
 import { Request, Response } from "express";
 
 

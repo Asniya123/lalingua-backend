@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { isString } from "../Admin/adminController.js";
-import { IChatMsgController, IChatMsgService } from "../../interface/IConversation.js";
+import { isString } from "../Admin/adminController";
+import { IChatMsgController, IChatMsgService } from "../../interface/IConversation";
 
 export default class ChatMsgController implements IChatMsgController {
   private chatMsgService: IChatMsgService;

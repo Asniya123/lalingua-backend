@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { IStudent, IEnrollment } from '../interface/IStudent.js';
+import { IStudent, IEnrollment } from '../interface/IStudent';
 import bcrypt from "bcrypt";
 
 

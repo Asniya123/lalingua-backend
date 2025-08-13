@@ -1,15 +1,14 @@
 import express, { Application } from 'express';
 import dotenv from 'dotenv';
 import cors, { CorsOptions } from 'cors';
-import mongoConnect from './config/db.js'
-import studentRoute from './routes/student/studentRoute.js'
-import chatRoute from './routes/student/chatRoute.js'
-import tutorRoutes from './routes/tutor/tutorRoute.js';
-import tutorChatRoute from './routes/tutor/tutorChatRoute.js'
-import adminRoutes from './routes/admin/adminRoute.js';
+import mongoConnect from './config/db'
+import studentRoute from './routes/student/studentRoute'
+import chatRoute from './routes/student/chatRoute'
+import tutorRoutes from './routes/tutor/tutorRoute';
+import tutorChatRoute from './routes/tutor/tutorChatRoute'
+import adminRoutes from './routes/admin/adminRoute';
 import { createServer } from 'http';
-import { Server as SocketIOServer  } from 'socket.io';
-import Ioconfig from './socket.config.js';
+import Ioconfig from './socket.config';
 import { Server } from 'https';
 
 dotenv.config();
@@ -26,7 +25,8 @@ const corsOptions: CorsOptions = {
 };
 app.use(cors(corsOptions));
 
-const port: string | number =   5000;
+const port: string | number = process.env.PORT || 5000;
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

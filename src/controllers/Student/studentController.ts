@@ -1,4 +1,4 @@
-import { IStudentController, IStudentService } from "../../interface/IStudent.js";
+import { IStudentController, IStudentService } from "../../interface/IStudent";
 import { Request, Response } from 'express';
 import { ObjectId } from "mongodb";
 

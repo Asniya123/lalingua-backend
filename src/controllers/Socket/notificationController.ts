@@ -1,12 +1,59 @@
-import mongoose from "mongoose";
-import { INotificationController, INotificationService } from "../../interface/INotification.js";
+import { INotificationController, INotificationService } from "../../interface/INotification";
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 
 export default class NotificationController implements INotificationController {
   private notificationService: INotificationService;
 
   constructor(notificationService: INotificationService) {
     this.notificationService = notificationService;
+  }
+
+  async saveNotification(req: Request, res: Response): Promise<void> {
+    try {
+      const { heading, message, from, fromModel, to, toModel, roomId } = req.body;
+
+      if (!heading || !message || !from || !fromModel || !to || !toModel) {
+        throw new Error("Missing required fields");
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(from) || !mongoose.Types.ObjectId.isValid(to)) {
+        throw new Error("Invalid from or to ID");
+      }
+
+      const notification = await this.notificationService.saveNotification({
+        heading,
+        message,
+        from,
+        fromModel,
+        to,
+        toModel,
+        roomId,
+        isRead: false,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: "Notification created successfully",
+        notification,
+      });
+    } catch (error) {
+      console.error("Controller: Error in saveNotification:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      const statusCode = error instanceof Error
+        ? error.message.includes("Invalid") || error.message.includes("required")
+          ? 400
+          : 500
+        : 500;
+
+      res.status(statusCode).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to create notification",
+      });
+    }
   }
 
   async getTutorNotifications(req: Request, res: Response): Promise<void> {
@@ -77,42 +124,6 @@ export default class NotificationController implements INotificationController {
       res.status(statusCode).json({
         success: false,
         message: error instanceof Error ? error.message : "Failed to fetch user notifications",
-      });
-    }
-  }
-
-  async getAdminNotifications(req: Request, res: Response): Promise<void> {
-    try {
-      const { adminId } = req.params;
-
-      if (!adminId || !mongoose.Types.ObjectId.isValid(adminId)) {
-        throw new Error("Valid admin ID is required");
-      }
-
-      console.log(`Controller: Fetching admin notifications for adminId: ${adminId}`);
-      const notifications = await this.notificationService.getAdminNotifications(adminId);
-      res.status(200).json({
-        success: true,
-        message: "Admin notifications fetched successfully",
-        notifications,
-      });
-    } catch (error) {
-      console.error("Controller: Error in getAdminNotifications:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-
-      const statusCode = error instanceof Error
-        ? error.message.includes("Invalid") || error.message.includes("required")
-          ? 400
-          : error.message.includes("not found")
-          ? 404
-          : 500
-        : 500;
-
-      res.status(statusCode).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Failed to fetch admin notifications",
       });
     }
   }

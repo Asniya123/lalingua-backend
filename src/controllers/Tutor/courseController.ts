@@ -3,7 +3,7 @@ import {
   ICourse,
   ICourseController,
   ICourseService,
-} from "../../interface/ICourse.js";
+} from "../../interface/ICourse";
 
 export default class CourseController implements ICourseController {
   private courseService: ICourseService;

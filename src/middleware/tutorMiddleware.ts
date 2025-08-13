@@ -1,6 +1,6 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import tutorRepo from "../repositories/tutor/tutorRepo.js";
+import tutorRepo from "../repositories/tutor/tutorRepo";
 import dotenv from "dotenv";
 
 dotenv.config();

@@ -1,5 +1,5 @@
-import { ILanguage, ILanguageRepository, ILanguageService } from "../../interface/ILanguage.js";
-import languageRepository from "../../repositories/admin/languageRepository.js";
+import { ILanguage, ILanguageRepository, ILanguageService } from "../../interface/ILanguage";
+import languageRepository from "../../repositories/admin/languageRepository";
 
 class LanguageService implements ILanguageService{
     private languageRepository: ILanguageRepository

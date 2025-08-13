@@ -1,4 +1,4 @@
-import { IReviewController, IReviewInput, IReviewService } from "../../interface/IReview.js";
+import { IReviewController, IReviewInput, IReviewService } from "../../interface/IReview";
 import { Request, Response } from "express";
 
 export default class ReviewController implements IReviewController {

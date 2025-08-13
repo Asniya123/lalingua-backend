@@ -1,6 +1,6 @@
 
-import { ILesson, ILessonInput, ILessonRepository, ILessonService } from "../../interface/ILesson.js";
-import lessonRepository from "../../repositories/tutor/lessonRepository.js";
+import { ILesson, ILessonInput, ILessonRepository, ILessonService } from "../../interface/ILesson";
+import lessonRepository from "../../repositories/tutor/lessonRepository";
 
 class LessonService implements ILessonService{
     private lessonRepository: ILessonRepository

@@ -1,4 +1,4 @@
-import { ISocketController, ISocketService } from "../../interface/IConversation.js";
+import { ISocketController, ISocketService } from "../../interface/IConversation";
 import { Socket, Server as SocketIOServer } from "socket.io";
 
 enum SocketEvent {
@@ -184,6 +184,19 @@ export default class SocketController implements ISocketController {
           if (receiverSocketId) {
             console.log(`Emitting newBadge to receiver ${recieverId} (socket: ${receiverSocketId})`);
             this._io.to(receiverSocketId).emit(SocketEvent.NewBadge, savedMessage);
+
+            // Emit new-notification to the receiver
+            const notificationPayload = {
+              roomId,
+              userId: recieverId,
+              message: savedMessage.message,
+              sender: savedMessage.senderId, // You may need to fetch sender's name from your service
+            };
+            console.log(
+              `Emitting new-notification to receiver ${recieverId} (socket: ${receiverSocketId}):`,
+              JSON.stringify(notificationPayload, null, 2)
+            );
+            this._io.to(receiverSocketId).emit(SocketEvent.ShowNotification, notificationPayload);
           }
         }
       } catch (error: any) {
@@ -229,6 +242,55 @@ export default class SocketController implements ISocketController {
         });
         socket.emit("error", {
           message: "Failed to mark messages as read",
+          error: error.message,
+        });
+      }
+    });
+
+    socket.on(SocketEvent.ShowNotification, async (data: { roomId: string; userId: string; message: string; sender: string }) => {
+      console.log("Received new-notification:", JSON.stringify(data, null, 2));
+      const { roomId, userId, message, sender } = data;
+
+      const missingFields: string[] = [];
+      if (!roomId) missingFields.push("roomId");
+      if (!userId) missingFields.push("userId");
+      if (!message) missingFields.push("message");
+      if (!sender) missingFields.push("sender");
+
+      if (missingFields.length > 0) {
+        console.error(`Invalid notification data. Missing: ${missingFields.join(", ")}`, {
+          data,
+          userId,
+          socketId: socket.id,
+        });
+        socket.emit("error", {
+          message: `Invalid notification data: ${missingFields.join(", ")}`,
+          fields: missingFields,
+        });
+        return;
+      }
+
+      try {
+        const receiverSocketId = this.getReceiverSocketId(userId);
+        if (receiverSocketId) {
+          console.log(
+            `Forwarding new-notification to receiver ${userId} (socket: ${receiverSocketId}):`,
+            JSON.stringify(data, null, 2)
+          );
+          this._io.to(receiverSocketId).emit(SocketEvent.ShowNotification, data);
+        } else {
+          console.warn(`Receiver ${userId} is not online for notification`, { userId });
+        }
+      } catch (error: any) {
+        console.error("Error processing notification:", {
+          message: error.message,
+          stack: error.stack,
+          data,
+          userId,
+          socketId: socket.id,
+        });
+        socket.emit("error", {
+          message: "Failed to process notification",
           error: error.message,
         });
       }

@@ -1,6 +1,6 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import studentRepo from "../repositories/student/studentRepo.js";
+import studentRepo from "../repositories/student/studentRepo";
 
 
 declare global {

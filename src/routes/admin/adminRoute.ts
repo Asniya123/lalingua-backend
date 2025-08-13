@@ -1,12 +1,12 @@
-import AdminController from "../../controllers/Admin/adminController.js"
-import CategoryController from "../../controllers/Admin/categoryController.js"
-import adminService from "../../service/Admin/adminService.js"
+import AdminController from "../../controllers/Admin/adminController"
+import CategoryController from "../../controllers/Admin/categoryController"
+import adminService from "../../service/Admin/adminService"
 import {  Router } from 'express'
-import categoryService from "../../service/Admin/categoryService.js"
-import LanguageController from "../../controllers/Admin/languageController.js"
-import languageService from "../../service/Admin/languageService.js"
-import EnrollmentChartController from "../../controllers/Admin/enrollmentChart.js"
-import enrollmentChart from "../../service/Admin/enrollmentChart.js"
+import categoryService from "../../service/Admin/categoryService"
+import LanguageController from "../../controllers/Admin/languageController"
+import languageService from "../../service/Admin/languageService"
+import EnrollmentChartController from "../../controllers/Admin/enrollmentChart"
+import enrollmentChart from "../../service/Admin/enrollmentChart"
 
 
 const router = Router()
@@ -40,7 +40,7 @@ router.patch("/block-unblock/:userId", adminController.blockUnblock.bind(adminCo
 //Tutor Management
 router.get('/getTutor', adminController.getTutors.bind(adminController))
 router.patch('/tutor-manage/:tutorId', adminController.tutorManagement.bind(adminController))
-router.get('/getTutorManage', (req, res) => adminController.getAllTutors(req, res));
+router.get('/getTutorManage',  adminController.getAllTutors.bind(adminController));
 router.post('/manageTutor/:tutorId', (req, res) => adminController.updateTutorStatus(req, res))
 
 //Course Management

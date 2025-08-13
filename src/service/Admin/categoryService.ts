@@ -1,5 +1,5 @@
-import { ICategory, ICategoryRepository, ICategoryService } from "../../interface/ICategory.js";
-import categoryRepository from "../../repositories/admin/categoryRepository.js";
+import { ICategory, ICategoryRepository, ICategoryService } from "../../interface/ICategory";
+import categoryRepository from "../../repositories/admin/categoryRepository";
 
 
 class CategoryService implements ICategoryService {

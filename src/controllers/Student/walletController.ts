@@ -1,4 +1,4 @@
-import { IWalletController, IWalletService } from "../../interface/IWallet.js"
+import { IWalletController, IWalletService } from "../../interface/IWallet"
 import {  Request, Response } from "express";
 
 export default class WalletController implements IWalletController{

@@ -1,7 +1,6 @@
-
 import mongoose, { FilterQuery, Model } from "mongoose"
-import { IEnrollment, IStudent, IStudentRepository } from "../../interface/IStudent.js"
-import studentModel from "../../models/studentModel.js"
+import { IEnrollment, IStudent, IStudentRepository } from "../../interface/IStudent"
+import studentModel from "../../models/studentModel"
 
 
 

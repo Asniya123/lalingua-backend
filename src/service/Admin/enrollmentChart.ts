@@ -1,5 +1,5 @@
-import { IEnrollmentChartRepository, IEnrollmentChartService, IEnrollmentStats } from "../../interface/IEnrollment.js";
-import enrollmentChart from "../../repositories/admin/enrollmentChart.js";
+import { IEnrollmentChartRepository, IEnrollmentChartService, IEnrollmentStats } from "../../interface/IEnrollment";
+import enrollmentChart from "../../repositories/admin/enrollmentChart";
 
 
 class EnrollmentChartService implements IEnrollmentChartService{

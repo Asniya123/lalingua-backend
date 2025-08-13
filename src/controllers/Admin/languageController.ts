@@ -3,7 +3,7 @@ import {
     ILanguage,
   ILanguageController,
   ILanguageService,
-} from "../../interface/ILanguage.js";
+} from "../../interface/ILanguage";
 
 export default class LanguageController implements ILanguageController {
   private languageService: ILanguageService;

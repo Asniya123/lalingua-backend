@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { IEnrollmentChartController, IEnrollmentChartService, IEnrollmentStats } from "../../interface/IEnrollment.js";
+import { IEnrollmentChartController, IEnrollmentChartService, IEnrollmentStats } from "../../interface/IEnrollment";
 
 export default class EnrollmentChartController implements IEnrollmentChartController{
     private enrollmentChartService: IEnrollmentChartService

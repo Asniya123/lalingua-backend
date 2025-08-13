@@ -5,15 +5,15 @@ import {
   ITutorDisplay,
   IUserLessonCompletion,
   T,
-} from "../../interface/ICourse.js";
-import CourseModel from "../../models/courseModel.js";
-import { IEnrollment } from "../../interface/IStudent.js";
-import { ILesson } from "../../interface/ILesson.js";
-import LessonModel from "../../models/lessonModel.js";
-import UserLessonCompletionModel from "../../models/lessonCompletionModel.js";
-import userModel from "../../models/studentModel.js";
-import courseModel from "../../models/courseModel.js";
-import reviewModel from "../../models/reviewModel.js";
+} from "../../interface/ICourse";
+import CourseModel from "../../models/courseModel";
+import { IEnrollment } from "../../interface/IStudent";
+import { ILesson } from "../../interface/ILesson";
+import LessonModel from "../../models/lessonModel";
+import UserLessonCompletionModel from "../../models/lessonCompletionModel";
+import userModel from "../../models/studentModel";
+import courseModel from "../../models/courseModel";
+import reviewModel from "../../models/reviewModel";
 
 class CourseRepository implements ISCourseRepository {
   async listCourses(

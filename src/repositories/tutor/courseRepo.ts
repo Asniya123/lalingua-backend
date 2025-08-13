@@ -1,6 +1,6 @@
-import { CreateCourseDTO, ICourse, ICourseRepository } from "../../interface/ICourse.js"; 
-import courseModel from "../../models/courseModel.js";
-import CourseModel from "../../models/courseModel.js" 
+import { CreateCourseDTO, ICourse, ICourseRepository } from "../../interface/ICourse"; 
+import courseModel from "../../models/courseModel";
+import CourseModel from "../../models/courseModel" 
 
 class CourseRepository implements ICourseRepository {
   

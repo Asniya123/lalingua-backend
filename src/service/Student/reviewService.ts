@@ -1,7 +1,7 @@
-import { IReview, IReviewInput, IReviewRepository, IReviewService, IStudentReview} from "../../interface/IReview.js";
-import { IStudentRepository } from "../../interface/IStudent.js";
-import reviewRepository from "../../repositories/student/reviewRepository.js";
-import studentRepo from "../../repositories/student/studentRepo.js";
+import { IReview, IReviewInput, IReviewRepository, IReviewService, IStudentReview} from "../../interface/IReview";
+import { IStudentRepository } from "../../interface/IStudent";
+import reviewRepository from "../../repositories/student/reviewRepository";
+import studentRepo from "../../repositories/student/studentRepo";
 
 export class ReviewService implements IReviewService{
     private reviewRepository: IReviewRepository

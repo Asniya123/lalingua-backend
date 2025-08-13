@@ -1,6 +1,6 @@
-import { IChatRepository, IMessage, ISocketService } from "../../interface/IConversation.js";
-import { INotificationRepository } from "../../interface/INotification.js";
-import chatRepository from "../../repositories/chatRepository.js";
+import { IChatRepository, IMessage, ISocketService } from "../../interface/IConversation";
+import { INotificationRepository } from "../../interface/INotification";
+import chatRepository from "../../repositories/chatRepository";
 import dotenv from 'dotenv';
 
 dotenv.config();

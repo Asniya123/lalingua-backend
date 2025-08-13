@@ -1,5 +1,5 @@
-import { ICategory, ICategoryRepository } from "../../interface/ICategory.js";
-import categoryModel from "../../models/categoryModel.js";
+import { ICategory, ICategoryRepository } from "../../interface/ICategory";
+import categoryModel from "../../models/categoryModel";
 
 class CategoryRepository implements ICategoryRepository {
     async addCategory(categoryData: ICategory): Promise<ICategory | null> {

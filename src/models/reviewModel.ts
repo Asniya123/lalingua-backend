@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { IReview } from "../interface/IReview.js";
+import { IReview } from "../interface/IReview";
 
 const ReviewSchema = new Schema<IReview>({
     courseId: { 

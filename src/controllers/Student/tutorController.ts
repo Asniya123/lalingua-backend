@@ -1,4 +1,4 @@
-import { ISTutorController, ISTutorService } from "../../interface/ITutor.js";
+import { ISTutorController, ISTutorService } from "../../interface/ITutor";
 import { Request, Response } from "express";
 
 
